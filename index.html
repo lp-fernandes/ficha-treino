@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#16161a" />
+<title>Ficha de Treino</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #16161a;
+    color: #ecebe8;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  :root {
+    --bg: #16161a;
+    --bg-card: #1e1e24;
+    --line: #2c2c34;
+    --text: #ecebe8;
+    --text-dim: #8f8d94;
+    --gold: #d3a13c;
+    --gold-dim: #7a6432;
+    --tag-tech: #b64b3f;
+    --tag-tech-bg: #3a2320;
+    --radius: 10px;
+  }
+  #root { max-width: 480px; margin: 0 auto; padding: env(safe-area-inset-top,14px) 12px 40px; }
+  .header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 4px 4px 14px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 14px;
+  }
+  .header h1 { font-size: 16px; font-weight: 800; letter-spacing: 0.02em; margin: 0; }
+  .header .sub { font-size: 11px; color: var(--text-dim); }
+  .tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 16px; }
+  .tab {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 8px 2px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .tab .day { font-size: 10px; color: var(--text-dim); letter-spacing: 0.04em; }
+  .tab .code { font-size: 14px; font-weight: 800; color: var(--text); margin-top: 1px; }
+  .tab.active { border-color: var(--gold); background: #26210f; }
+  .tab.active .day, .tab.active .code { color: var(--gold); }
+
+  .day-title { font-size: 13px; color: var(--text-dim); margin: 0 2px 10px; }
+  .day-title strong { color: var(--text); font-weight: 700; }
+
+  .ex-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .ex-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .ex-name { font-size: 13.5px; font-weight: 700; line-height: 1.25; }
+  .ex-focus { font-size: 10.5px; color: var(--gold-dim); margin-top: 1px; }
+  .ex-num { font-size: 10.5px; color: var(--text-dim); min-width: 16px; padding-top: 1px; }
+  .ex-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 8px; }
+  .ex-grid .cell { text-align: center; }
+  .ex-grid .cell .val { font-size: 13px; font-weight: 700; }
+  .ex-grid .cell .lbl { font-size: 9px; color: var(--text-dim); letter-spacing: 0.03em; margin-top: 1px; }
+
+  .pyramid { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
+  .pyramid .set {
+    flex: 1; min-width: 58px;
+    background: #17171b;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 5px 4px;
+    text-align: center;
+  }
+  .pyramid .set.last { border-color: var(--tag-tech); }
+  .pyramid .set .r { font-size: 11.5px; font-weight: 700; }
+  .pyramid .set .n { font-size: 8.5px; color: var(--text-dim); }
+  .pyramid .set input[type="checkbox"] { margin-top: 4px; width: 17px; height: 17px; accent-color: var(--gold); }
+
+  .tech-tag { display: inline-block; font-size: 9.5px; color: var(--tag-tech); background: var(--tag-tech-bg); border-radius: 5px; padding: 2px 6px; margin-top: 7px; }
+  .exec { font-size: 10.5px; color: var(--text-dim); margin-top: 6px; line-height: 1.3; }
+  .footer-note { font-size: 10px; color: var(--text-dim); text-align: center; margin-top: 14px; padding: 0 8px; line-height: 1.4; }
+  .reset-btn {
+    display: block; margin: 12px auto 0;
+    background: none; border: 1px solid var(--line); color: var(--text-dim);
+    font-size: 11px; padding: 6px 14px; border-radius: 20px;
+  }
+  .install-tip {
+    font-size: 10.5px; color: var(--text-dim);
+    background: var(--bg-card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 8px 10px; margin-top: 16px; line-height: 1.4;
+  }
+  .install-tip strong { color: var(--gold); }
+</style>
+</head>
+<body>
+<div id="root">
+  <div class="header">
+    <h1>Ficha de Treino</h1>
+    <div class="sub">Hipertrofia · V-Shape</div>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+  <div class="day-title" id="day-title"></div>
+  <div id="exercises"></div>
+
+  <button class="reset-btn" id="reset-btn">Reiniciar marcações do dia</button>
+  <div class="footer-note">Toque nos quadrados pra marcar a série feita. Fica salvo neste navegador, mesmo fechando a aba.</div>
+
+  <div class="install-tip">
+    <strong>Dica:</strong> pra abrir como um app (sem barra do navegador), toque em Compartilhar (iPhone) ou no menu ⋮ (Android) e escolha "Adicionar à Tela de Início".
+  </div>
+</div>
+
+<script>
+(function() {
+  const DATA = {
+    A1: {
+      label: "Costas (Largura) + Bíceps",
+      day: "SEG",
+      exercises: [
+        { name: "Puxada Alta Pronada Aberta", focus: "Costas — largura", pyramid: [
+            {n:"S1",r:"15–20"},{n:"S2",r:"10–15"},{n:"S3",r:"8–12"},{n:"S4",r:"6–10",last:true}
+          ], tech: "Última: rest-pause", interval: "2–3 min", exec: "Cotovelos para os bolsos, alongamento total no topo." },
+        { name: "High Row Máquina", focus: "Costas — largura/espessura", sets:"4", reps:"8–10", interval:"90s–2min", tech:"Segurar 2s", exec:"Peito apoiado, cotovelos para baixo e para trás." },
+        { name: "Remada Máquina Guiada", focus: "Costas — espessura", sets:"3", reps:"8–10", interval:"90s", tech:"Pico contração 2s", exec:"Excêntrica de 3s." },
+        { name: "Remada Unilateral Máquina", focus: "Corrigir assimetrias", sets:"3", reps:"10–12", interval:"60–90s", exec:"Não gire o tronco, cotovelo passa a linha do corpo." },
+        { name: "Reverse Fly Máquina", focus: "Deltoide posterior", sets:"3", reps:"12–15", interval:"45s", tech:"Última: drop set", exec:"Abra os cotovelos, sem elevar os ombros." },
+        { name: "Rosca Scott Máquina", focus: "Bíceps — pico", sets:"3", reps:"8–10", interval:"60s", tech:"Última: drop set", exec:"Braço 100% apoiado, sem tirar o cotovelo." },
+      ]
+    },
+    B1: {
+      label: "Peito + Ombros + Tríceps",
+      day: "TER",
+      exercises: [
+        { name: "Supino Inclinado Máquina", focus: "Peito superior", pyramid: [
+            {n:"S1",r:"15–20"},{n:"S2",r:"10–15"},{n:"S3",r:"8–12"},{n:"S4",r:"6–10",last:true}
+          ], tech: "Última: drop set", interval: "2–3 min", exec: "Aproxime os braços na subida, não só empurre." },
+        { name: "Supino Hammer Strength", focus: "Peito — espessura", sets:"4", reps:"8–10", interval:"90s–2min", exec:"Controle total, ombros fixos no banco." },
+        { name: "Fly Inclinado Máquina", focus: "Peito — alongamento", sets:"3", reps:"10–12", interval:"60s", tech:"Última: LP", exec:"Abra como se abraçasse um barril." },
+        { name: "Peck Deck", focus: "Peito — contração", sets:"3", reps:"12–15", interval:"45–60s", tech:"Segurar 2s", exec:"Segure 1s na contração." },
+        { name: "Elevação Lateral Máquina", focus: "Deltoide lateral", sets:"4", reps:"12–15", interval:"60s", tech:"Última: drop set", exec:"Empurre os cotovelos para os lados." },
+        { name: "Elevação Lateral Cabo", focus: "Deltoide lateral — acabamento", sets:"3", reps:"12–15", interval:"45s", exec:"Movimento contínuo, sem embalo." },
+        { name: "Tríceps Máquina Articulada", focus: "Tríceps — volume", sets:"3", reps:"8–10", interval:"60s", exec:"Cotovelos fixos, extensão completa sem hiperestender." },
+      ]
+    },
+    C: {
+      label: "Pernas Completo + Core",
+      day: "QUA",
+      exercises: [
+        { name: "Hack Machine", focus: "Quadríceps", pyramid: [
+            {n:"S1",r:"15–20"},{n:"S2",r:"10–15"},{n:"S3",r:"8–12"},{n:"S4",r:"6–10",last:true}
+          ], tech: "Última: drop set", interval: "2–3 min", exec: "Amplitude máxima que a lombar aguenta estável." },
+        { name: "Leg Press 45°", focus: "Quadríceps/glúteo", pyramid: [
+            {n:"S1",r:"15–20"},{n:"S2",r:"10–15"},{n:"S3",r:"8–12",last:true}
+          ], tech: "Última: parciais após falha", interval: "90s–2min", exec: "Não trave os joelhos no topo." },
+        { name: "Cadeira Extensora", focus: "Quadríceps — finalização", sets:"3", reps:"12–15", interval:"30–45s", tech:"Última: drop set (2x)", exec:"Pico de contração de 2s." },
+        { name: "Stiff-leg com Halteres", focus: "Isquiotibiais/glúteo", pyramid: [
+            {n:"S1",r:"15–20"},{n:"S2",r:"10–15"},{n:"S3",r:"8–12"},{n:"S4",r:"6–10",last:true}
+          ], tech: "Última: rest-pause", interval: "2–3 min", exec: "Pegada neutra (sem estresse de barra reta). Quadril leva o movimento." },
+        { name: "Mesa Flexora", focus: "Posterior de coxa", sets:"4", reps:"10–12", interval:"90s", tech:"Última: LP", exec:"Alongue totalmente entre repetições." },
+        { name: "Cadeira Abdutora", focus: "Glúteo médio", sets:"3", reps:"15–20", interval:"45s", exec:"Contração máxima, sem embalo." },
+        { name: "Panturrilha em Pé", focus: "Gastrocnêmio", pyramid: [
+            {n:"S1",r:"15–20"},{n:"S2",r:"10–15"},{n:"S3",r:"8–12"},{n:"S4",r:"6–10",last:true}
+          ], tech: "Última: drop set", interval: "60s", exec: "Pausa de 2s no alongamento." },
+        { name: "Panturrilha Sentada", focus: "Sóleo", sets:"3", reps:"12–20", interval:"60s", tech:"Última: myo-reps", exec:"Amplitude completa, pausa embaixo." },
+        { name: "Abdominal Máquina + Prancha", focus: "Core", sets:"3", reps:"12–15 / 30–45s", interval:"45s", exec:"Movimento vem do abdômen, sem embalar o quadril." },
+      ]
+    },
+    A2: {
+      label: "Costas (Espessura) + Bíceps",
+      day: "QUI",
+      exercises: [
+        { name: "Puxada Alta Supinada", focus: "Costas — dorsal inferior", pyramid: [
+            {n:"S1",r:"15–20"},{n:"S2",r:"10–15"},{n:"S3",r:"8–12"},{n:"S4",r:"6–10",last:true}
+          ], tech: "Última: pico contração 2s", interval: "2–3 min", exec: "Pense em \"trazer os cotovelos para os bolsos\"." },
+        { name: "Puxada Alta Fechada Neutra", focus: "Costas — densidade", sets:"4", reps:"8–10", interval:"90s", tech:"Segurar 1s embaixo", exec:"Segure 1s embaixo do movimento." },
+        { name: "Remada Baixa Triângulo", focus: "Costas — espessura média", sets:"3", reps:"8–10", interval:"90s", exec:"Feche as escápulas sem balançar o tronco." },
+        { name: "Front Pulldown", focus: "Costas — abrir dorsais", sets:"4", reps:"8–10", interval:"90s", exec:"Inicie deprimindo as escápulas, cotovelos para baixo." },
+        { name: "Rosca Inclinada Halteres", focus: "Bíceps — cabeça longa", sets:"3", reps:"10–12", interval:"60s", exec:"Braço atrás do corpo, ombro não avança." },
+        { name: "Rosca Martelo", focus: "Braquial/antebraço", sets:"3", reps:"10–12", interval:"60s", tech:"Última: rest-pause", exec:"Punhos neutros do início ao fim." },
+      ]
+    },
+    B2: {
+      label: "Peito + Ombros + Tríceps",
+      day: "SEX",
+      exercises: [
+        { name: "Supino Reto Máquina", focus: "Peito — outro ângulo", pyramid: [
+            {n:"S1",r:"15–20"},{n:"S2",r:"10–15"},{n:"S3",r:"8–12"},{n:"S4",r:"6–10",last:true}
+          ], tech: "Última: strip set", interval: "2–3 min", exec: "Excêntrica controlada." },
+        { name: "Fly Máquina", focus: "Peito — contração", sets:"3", reps:"12–15", interval:"45–60s", tech:"Última: rest-pause", exec:"Segure 1s no pico." },
+        { name: "Elevação Lateral Máquina", focus: "Deltoide lateral (2ª/semana)", sets:"4", reps:"12–15", interval:"60s", tech:"Última: drop set", exec:"Cotovelos lideram o movimento." },
+        { name: "Desenvolvimento Máquina", focus: "Deltoide anterior", sets:"3", reps:"10–12", interval:"90s", exec:"Sem hiperestender os cotovelos." },
+        { name: "Tríceps Máquina Articulada", focus: "Tríceps — lateral/medial", sets:"3", reps:"8–10", interval:"60s", exec:"Carga alta com técnica." },
+        { name: "Tríceps Francês Corda", focus: "Tríceps — cabeça longa", sets:"3", reps:"10–12", interval:"45s", tech:"Última: LP", exec:"Alongamento máximo atrás da cabeça." },
+      ]
+    }
+  };
+
+  const ORDER = ["A1","B1","C","A2","B2"];
+  let current = ORDER[0];
+  const STORE_PREFIX = "ficha_treino_v1:";
+
+  const tabsEl = document.getElementById("tabs");
+  const titleEl = document.getElementById("day-title");
+  const exEl = document.getElementById("exercises");
+  const resetBtn = document.getElementById("reset-btn");
+
+  function storageKey(dayCode, exIdx, setIdx) {
+    return STORE_PREFIX + dayCode + ":" + exIdx + ":" + setIdx;
+  }
+  function getChecked(key) {
+    try { return localStorage.getItem(key) === "1"; } catch (e) { return false; }
+  }
+  function setChecked(key, val) {
+    try { localStorage.setItem(key, val ? "1" : "0"); } catch (e) {}
+  }
+
+  function renderTabs() {
+    tabsEl.innerHTML = "";
+    ORDER.forEach(code => {
+      const d = DATA[code];
+      const tab = document.createElement("div");
+      tab.className = "tab" + (code === current ? " active" : "");
+      tab.innerHTML = '<div class="day">' + d.day + '</div><div class="code">' + code + '</div>';
+      tab.onclick = function() { current = code; render(); };
+      tabsEl.appendChild(tab);
+    });
+  }
+
+  function renderExercises() {
+    const d = DATA[current];
+    titleEl.innerHTML = '<strong>' + current + '</strong> — ' + d.label;
+    exEl.innerHTML = "";
+
+    for (let i = 0; i < d.exercises.length; i++) {
+      const ex = d.exercises[i];
+      const card = document.createElement("div");
+      card.className = "ex-card";
+
+      let inner = ''
+        + '<div class="ex-top">'
+        + '  <div>'
+        + '    <div class="ex-name">' + ex.name + '</div>'
+        + '    <div class="ex-focus">' + ex.focus + '</div>'
+        + '  </div>'
+        + '  <div class="ex-num">' + (i + 1) + '</div>'
+        + '</div>';
+
+      if (ex.pyramid) {
+        inner += '<div class="pyramid">';
+        for (let s = 0; s < ex.pyramid.length; s++) {
+          const set = ex.pyramid[s];
+          const key = storageKey(current, i, s);
+          const checked = getChecked(key) ? "checked" : "";
+          inner += ''
+            + '<div class="set' + (set.last ? " last" : "") + '">'
+            + '  <div class="r">' + set.r + '</div>'
+            + '  <div class="n">' + set.n + '</div>'
+            + '  <input type="checkbox" data-key="' + key + '" ' + checked + ' />'
+            + '</div>';
+        }
+        inner += '</div>';
+        inner += '<div class="exec">Intervalo: ' + ex.interval + (ex.tech ? " · " + ex.tech : "") + '<br>' + ex.exec + '</div>';
+      } else {
+        inner += ''
+          + '<div class="ex-grid">'
+          + '  <div class="cell"><div class="val">' + ex.sets + '</div><div class="lbl">SÉRIES</div></div>'
+          + '  <div class="cell"><div class="val">' + ex.reps + '</div><div class="lbl">REPS</div></div>'
+          + '  <div class="cell"><div class="val">' + ex.interval + '</div><div class="lbl">INTERVALO</div></div>'
+          + '</div>';
+        if (ex.tech) inner += '<div class="tech-tag">' + ex.tech + '</div>';
+        inner += '<div class="exec">' + ex.exec + '</div>';
+      }
+
+      card.innerHTML = inner;
+      exEl.appendChild(card);
+    }
+
+    const boxes = exEl.querySelectorAll('input[type="checkbox"]');
+    boxes.forEach(function(box) {
+      box.addEventListener("change", function() {
+        setChecked(box.getAttribute("data-key"), box.checked);
+      });
+    });
+  }
+
+  function render() {
+    renderTabs();
+    renderExercises();
+  }
+
+  resetBtn.onclick = function() {
+    const d = DATA[current];
+    for (let i = 0; i < d.exercises.length; i++) {
+      const ex = d.exercises[i];
+      if (ex.pyramid) {
+        for (let s = 0; s < ex.pyramid.length; s++) {
+          setChecked(storageKey(current, i, s), false);
+        }
+      }
+    }
+    render();
+  };
+
+  render();
+})();
+</script>
+</body>
+</html>
