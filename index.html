@@ -17,12 +17,11 @@
     --text:#f0efec; --text-dim:#8d8b93; --text-dim2:#5f5d66;
     --gold:#e0ab4a; --gold-dim:#8a6a2c; --gold-glow:rgba(224,171,74,0.18);
     --tag-tech:#e0694f; --tag-tech-bg:#3a221c;
-    --green:#5ec98a;
+    --blue:#5b9bd5; --blue-bg:#1c2c3a;
     --radius:14px; --radius-sm:9px;
   }
   #root { max-width:480px; margin:0 auto; padding:env(safe-area-inset-top,16px) 14px calc(96px + env(safe-area-inset-bottom,0px)); }
 
-  /* ---- header ---- */
   .header { display:flex; align-items:center; gap:10px; padding:2px 2px 16px; }
   .logo { width:34px; height:34px; border-radius:10px; background:linear-gradient(145deg,#e0ab4a,#a9752a);
     display:flex; align-items:center; justify-content:center; flex-shrink:0; }
@@ -30,7 +29,6 @@
   .header-text h1 { font-size:16px; font-weight:800; letter-spacing:-0.01em; margin:0; line-height:1.1; }
   .header-text .sub { font-size:11px; color:var(--text-dim); margin-top:2px; }
 
-  /* ---- day chips ---- */
   .tabs { display:flex; gap:7px; margin-bottom:14px; overflow-x:auto; padding-bottom:2px; scrollbar-width:none; }
   .tabs::-webkit-scrollbar { display:none; }
   .tab { flex:1; min-width:58px; background:var(--bg-card); border:1px solid var(--line); border-radius:12px;
@@ -40,7 +38,6 @@
   .tab.active { border-color:var(--gold); background:var(--gold-glow); }
   .tab.active .day, .tab.active .code { color:var(--gold); }
 
-  /* ---- day header + progress ---- */
   .day-title { font-size:14px; color:var(--text-dim); margin:0 2px 8px; display:flex; align-items:center; gap:8px; }
   .day-title strong { color:var(--text); font-weight:800; }
   .day-title input { flex:1; background:var(--bg-input); border:1px solid var(--line); color:var(--text);
@@ -50,14 +47,24 @@
   .progress-fill { height:100%; border-radius:6px; background:linear-gradient(90deg,#e0ab4a,#f0c874); transition:width .3s ease; }
   .progress-label { font-size:10px; color:var(--text-dim2); margin-top:5px; text-align:right; }
 
-  /* ---- exercise cards ---- */
   .ex-card { background:var(--bg-card); border:1px solid var(--line); border-radius:var(--radius);
     padding:13px 14px; margin-bottom:10px; box-shadow:0 3px 10px rgba(0,0,0,0.18); }
   .ex-top { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
   .ex-name { font-size:14px; font-weight:700; line-height:1.25; }
-  .ex-focus { font-size:11px; color:var(--gold-dim); margin-top:2px; font-weight:600; }
+  .ex-focus-row { display:flex; align-items:center; gap:6px; margin-top:3px; flex-wrap:wrap; }
+  .ex-focus { font-size:11px; color:var(--gold-dim); font-weight:600; }
+  .grip-chip { font-size:9.5px; color:var(--blue); background:var(--blue-bg); border-radius:5px; padding:2px 6px; font-weight:700; }
   .ex-num { font-size:10.5px; color:var(--text-dim2); min-width:20px; height:20px; border-radius:6px;
     background:var(--bg-card2); display:flex; align-items:center; justify-content:center; font-weight:700; }
+
+  .ex-thumb { margin-top:9px; border-radius:10px; overflow:hidden; max-height:110px; cursor:pointer;
+    transition:max-height .2s ease; background:var(--bg-input); }
+  .ex-thumb.expanded { max-height:280px; }
+  .ex-thumb img { width:100%; display:block; object-fit:cover; max-height:inherit; }
+
+  .video-wrap { margin-top:9px; border-radius:10px; overflow:hidden; display:none; background:#000; }
+  .video-wrap.show { display:block; }
+  .video-wrap iframe { width:100%; aspect-ratio:16/9; display:block; border:0; }
 
   .sets-row { display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
   .sets-row .set { flex:1; min-width:56px; background:var(--bg-input); border:1px solid var(--line);
@@ -71,17 +78,17 @@
   .sets-row .set .kg-input::placeholder { color:var(--text-dim2); }
   .sets-row .set input[type="checkbox"] { margin-top:6px; width:19px; height:19px; accent-color:var(--gold); }
 
-  .meta-row { display:flex; align-items:center; justify-content:space-between; margin-top:9px; gap:8px; }
+  .meta-row { display:flex; align-items:center; justify-content:space-between; margin-top:9px; gap:6px; flex-wrap:wrap; }
   .meta-left { font-size:10.5px; color:var(--text-dim); line-height:1.35; }
   .tech-chip { display:inline-block; font-size:9.5px; color:var(--tag-tech); background:var(--tag-tech-bg);
     border-radius:5px; padding:2px 6px; margin-right:5px; font-weight:600; }
-  .timer-btn { flex-shrink:0; display:flex; align-items:center; gap:4px; background:var(--bg-card2);
+  .pill-btn-group { display:flex; gap:6px; flex-shrink:0; }
+  .pill-btn { display:flex; align-items:center; gap:4px; background:var(--bg-card2);
     border:1px solid var(--line); color:var(--gold); font-size:11px; font-weight:700; padding:6px 10px;
     border-radius:20px; cursor:pointer; }
-  .timer-btn svg { width:12px; height:12px; }
+  .pill-btn svg { width:12px; height:12px; }
   .exec { font-size:10.5px; color:var(--text-dim2); margin-top:6px; line-height:1.35; }
 
-  /* ---- floating rest timer ---- */
   #timer-bar { position:fixed; left:0; right:0; bottom:calc(74px + env(safe-area-inset-bottom,0px));
     display:flex; justify-content:center; pointer-events:none; z-index:40; opacity:0; transform:translateY(8px);
     transition:opacity .2s ease, transform .2s ease; }
@@ -93,7 +100,6 @@
     color:var(--text); font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
   .timer-pill button.close { background:none; color:var(--text-dim2); }
 
-  /* ---- bottom nav ---- */
   #bottom-nav { position:fixed; left:0; right:0; bottom:0; background:rgba(18,18,22,0.92);
     backdrop-filter:blur(14px); border-top:1px solid var(--line); display:flex; justify-content:center;
     padding:8px 14px calc(8px + env(safe-area-inset-bottom,0px)); z-index:30; }
@@ -106,9 +112,8 @@
   .nav-btn.active .icon-bg { background:var(--gold-glow); }
   .icon-bg { width:36px; height:22px; border-radius:10px; display:flex; align-items:center; justify-content:center; }
 
-  /* ---- edit mode ---- */
   .field-label { font-size:9px; color:var(--text-dim2); letter-spacing:0.05em; margin:9px 0 4px; text-transform:uppercase; font-weight:700; }
-  .edit-input, .edit-textarea { width:100%; background:var(--bg-input); border:1px solid var(--line); color:var(--text);
+  .edit-input, .edit-textarea, .edit-select { width:100%; background:var(--bg-input); border:1px solid var(--line); color:var(--text);
     font-size:13px; padding:8px 10px; border-radius:9px; font-family:inherit; }
   .edit-input.name-input { font-size:14.5px; font-weight:700; }
   .edit-textarea { resize:vertical; min-height:40px; }
@@ -197,66 +202,72 @@
 <script>
 (function() {
   const ORDER = ["A1","B1","C","A2","B2"];
-  const DATA_KEY = "ficha_treino_data_v3";
-  const PROGRESS_KEY = "ficha_treino_progress_v3";
+  const DATA_KEY = "ficha_treino_data_v5";
+  const PROGRESS_KEY = "ficha_treino_progress_v5";
+  const CATALOG_KEY = "ficha_treino_catalog_v1";
+  const GRIPS = ["—","Pronada","Supinada","Neutra"];
+  const NEW_OPTION = "__novo__";
 
-  function ex(name, focus, sets, interval, tech, exec) {
-    return { name, focus, sets, interval, tech: tech || "", exec: exec || "" };
+  function ex(name, focus, sets, interval, tech, exec, grip, img, video) {
+    return { name, focus, sets, interval, tech: tech || "", exec: exec || "", grip: grip || "—", img: img || "", video: video || "" };
   }
 
   function defaultData() {
     return {
       A1: { day:"SEG", label:"Costas (Largura) + Bíceps", exercises:[
-        ex("Puxada Alta Pronada Aberta","Costas — largura",["15–20","10–15","8–12","6–10"],"2–3 min","Última: rest-pause","Cotovelos para os bolsos, alongamento total no topo."),
-        ex("High Row Máquina","Costas — largura/espessura",["8–10","8–10","8–10","8–10"],"90s–2min","Segurar 2s","Peito apoiado, cotovelos para baixo e para trás."),
-        ex("Remada Máquina Guiada","Costas — espessura",["8–10","8–10","8–10"],"90s","Pico contração 2s","Excêntrica de 3s."),
-        ex("Remada Unilateral Máquina","Corrigir assimetrias",["10–12","10–12","10–12"],"60–90s","","Não gire o tronco, cotovelo passa a linha do corpo."),
-        ex("Reverse Fly Máquina","Deltoide posterior",["12–15","12–15","12–15"],"45s","Última: drop set","Abra os cotovelos, sem elevar os ombros."),
-        ex("Rosca Scott Máquina","Bíceps — pico",["8–10","8–10","8–10"],"60s","Última: drop set","Braço 100% apoiado, sem tirar o cotovelo."),
+        ex("Puxada Alta Pronada Aberta","Costas — largura",["15–20","10–15","8–12","6–10"],"2–3 min","Última: rest-pause","Cotovelos para os bolsos, alongamento total no topo.","Pronada"),
+        ex("High Row Máquina","Costas — largura/espessura",["8–10","8–10","8–10","8–10"],"90s–2min","Segurar 2s","Peito apoiado, cotovelos para baixo e para trás.","Neutra"),
+        ex("Remada Máquina Guiada","Costas — espessura",["8–10","8–10","8–10"],"90s","Pico contração 2s","Excêntrica de 3s.","Pronada"),
+        ex("Remada Unilateral Máquina","Corrigir assimetrias",["10–12","10–12","10–12"],"60–90s","","Não gire o tronco, cotovelo passa a linha do corpo.","Neutra"),
+        ex("Reverse Fly Máquina","Deltoide posterior",["12–15","12–15","12–15"],"45s","Última: drop set","Abra os cotovelos, sem elevar os ombros.","Neutra"),
+        ex("Rosca Scott Máquina","Bíceps — pico",["8–10","8–10","8–10"],"60s","Última: drop set","Braço 100% apoiado, sem tirar o cotovelo.","Supinada"),
       ]},
       B1: { day:"TER", label:"Peito + Ombros + Tríceps", exercises:[
-        ex("Supino Inclinado Máquina","Peito superior",["15–20","10–15","8–12","6–10"],"2–3 min","Última: drop set","Aproxime os braços na subida, não só empurre."),
-        ex("Supino Hammer Strength","Peito — espessura",["8–10","8–10","8–10","8–10"],"90s–2min","","Controle total, ombros fixos no banco."),
-        ex("Fly Inclinado Máquina","Peito — alongamento",["10–12","10–12","10–12"],"60s","Última: LP","Abra como se abraçasse um barril."),
-        ex("Peck Deck","Peito — contração",["12–15","12–15","12–15"],"45–60s","Segurar 2s","Segure 1s na contração."),
-        ex("Elevação Lateral Máquina","Deltoide lateral",["12–15","12–15","12–15","12–15"],"60s","Última: drop set","Empurre os cotovelos para os lados."),
-        ex("Elevação Lateral Cabo","Deltoide lateral — acabamento",["12–15","12–15","12–15"],"45s","","Movimento contínuo, sem embalo."),
-        ex("Tríceps Máquina Articulada","Tríceps — volume",["8–10","8–10","8–10"],"60s","","Cotovelos fixos, extensão completa sem hiperestender."),
+        ex("Supino Inclinado Máquina","Peito superior",["15–20","10–15","8–12","6–10"],"2–3 min","Última: drop set","Aproxime os braços na subida, não só empurre.","Pronada"),
+        ex("Supino Hammer Strength","Peito — espessura",["8–10","8–10","8–10","8–10"],"90s–2min","","Controle total, ombros fixos no banco.","Neutra"),
+        ex("Fly Inclinado Máquina","Peito — alongamento",["10–12","10–12","10–12"],"60s","Última: LP","Abra como se abraçasse um barril.","Neutra"),
+        ex("Peck Deck","Peito — contração",["12–15","12–15","12–15"],"45–60s","Segurar 2s","Segure 1s na contração.","Neutra"),
+        ex("Elevação Lateral Máquina","Deltoide lateral",["12–15","12–15","12–15","12–15"],"60s","Última: drop set","Empurre os cotovelos para os lados.","Neutra"),
+        ex("Elevação Lateral Cabo","Deltoide lateral — acabamento",["12–15","12–15","12–15"],"45s","","Movimento contínuo, sem embalo.","Neutra"),
+        ex("Tríceps Máquina Articulada","Tríceps — volume",["8–10","8–10","8–10"],"60s","","Cotovelos fixos, extensão completa sem hiperestender.","Neutra"),
       ]},
       C: { day:"QUA", label:"Pernas Completo + Core", exercises:[
-        ex("Hack Machine","Quadríceps",["15–20","10–15","8–12","6–10"],"2–3 min","Última: drop set","Amplitude máxima que a lombar aguenta estável."),
-        ex("Leg Press 45°","Quadríceps/glúteo",["15–20","10–15","8–12"],"90s–2min","Última: parciais após falha","Não trave os joelhos no topo."),
-        ex("Cadeira Extensora","Quadríceps — finalização",["12–15","12–15","12–15"],"30–45s","Última: drop set (2x)","Pico de contração de 2s."),
-        ex("Stiff-leg com Halteres","Isquiotibiais/glúteo",["15–20","10–15","8–12","6–10"],"2–3 min","Última: rest-pause","Pegada neutra (sem estresse de barra reta). Quadril leva o movimento."),
-        ex("Mesa Flexora","Posterior de coxa",["10–12","10–12","10–12","10–12"],"90s","Última: LP","Alongue totalmente entre repetições."),
-        ex("Cadeira Abdutora","Glúteo médio",["15–20","15–20","15–20"],"45s","","Contração máxima, sem embalo."),
-        ex("Panturrilha em Pé","Gastrocnêmio",["15–20","10–15","8–12","6–10"],"60s","Última: drop set","Pausa de 2s no alongamento."),
-        ex("Panturrilha Sentada","Sóleo",["12–20","12–20","12–20"],"60s","Última: myo-reps","Amplitude completa, pausa embaixo."),
-        ex("Abdominal Máquina + Prancha","Core",["12–15","12–15","30–45s"],"45s","","Movimento vem do abdômen, sem embalar o quadril."),
+        ex("Hack Machine","Quadríceps",["15–20","10–15","8–12","6–10"],"2–3 min","Última: drop set","Amplitude máxima que a lombar aguenta estável.","—"),
+        ex("Leg Press 45°","Quadríceps/glúteo",["15–20","10–15","8–12"],"90s–2min","Última: parciais após falha","Não trave os joelhos no topo.","—"),
+        ex("Cadeira Extensora","Quadríceps — finalização",["12–15","12–15","12–15"],"30–45s","Última: drop set (2x)","Pico de contração de 2s.","—"),
+        ex("Stiff-leg com Halteres","Isquiotibiais/glúteo",["15–20","10–15","8–12","6–10"],"2–3 min","Última: rest-pause","Pegada neutra (sem estresse de barra reta). Quadril leva o movimento.","Neutra"),
+        ex("Mesa Flexora","Posterior de coxa",["10–12","10–12","10–12","10–12"],"90s","Última: LP","Alongue totalmente entre repetições.","—"),
+        ex("Cadeira Abdutora","Glúteo médio",["15–20","15–20","15–20"],"45s","","Contração máxima, sem embalo.","—"),
+        ex("Panturrilha em Pé","Gastrocnêmio",["15–20","10–15","8–12","6–10"],"60s","Última: drop set","Pausa de 2s no alongamento.","—"),
+        ex("Panturrilha Sentada","Sóleo",["12–20","12–20","12–20"],"60s","Última: myo-reps","Amplitude completa, pausa embaixo.","—"),
+        ex("Abdominal Máquina + Prancha","Core",["12–15","12–15","30–45s"],"45s","","Movimento vem do abdômen, sem embalar o quadril.","—"),
       ]},
       A2: { day:"QUI", label:"Costas (Espessura) + Bíceps", exercises:[
-        ex("Puxada Alta Supinada","Costas — dorsal inferior",["15–20","10–15","8–12","6–10"],"2–3 min","Última: pico contração 2s","Pense em \"trazer os cotovelos para os bolsos\"."),
-        ex("Puxada Alta Fechada Neutra","Costas — densidade",["8–10","8–10","8–10","8–10"],"90s","Segurar 1s embaixo","Segure 1s embaixo do movimento."),
-        ex("Remada Baixa Triângulo","Costas — espessura média",["8–10","8–10","8–10"],"90s","","Feche as escápulas sem balançar o tronco."),
-        ex("Front Pulldown","Costas — abrir dorsais",["8–10","8–10","8–10","8–10"],"90s","","Inicie deprimindo as escápulas, cotovelos para baixo."),
-        ex("Rosca Inclinada Halteres","Bíceps — cabeça longa",["10–12","10–12","10–12"],"60s","","Braço atrás do corpo, ombro não avança."),
-        ex("Rosca Martelo","Braquial/antebraço",["10–12","10–12","10–12"],"60s","Última: rest-pause","Punhos neutros do início ao fim."),
+        ex("Puxada Alta Supinada","Costas — dorsal inferior",["15–20","10–15","8–12","6–10"],"2–3 min","Última: pico contração 2s","Pense em \"trazer os cotovelos para os bolsos\".","Supinada"),
+        ex("Puxada Alta Fechada Neutra","Costas — densidade",["8–10","8–10","8–10","8–10"],"90s","Segurar 1s embaixo","Segure 1s embaixo do movimento.","Neutra"),
+        ex("Remada Baixa Triângulo","Costas — espessura média",["8–10","8–10","8–10"],"90s","","Feche as escápulas sem balançar o tronco.","Neutra"),
+        ex("Front Pulldown","Costas — abrir dorsais",["8–10","8–10","8–10","8–10"],"90s","","Inicie deprimindo as escápulas, cotovelos para baixo.","Pronada"),
+        ex("Rosca Inclinada Halteres","Bíceps — cabeça longa",["10–12","10–12","10–12"],"60s","","Braço atrás do corpo, ombro não avança.","Supinada"),
+        ex("Rosca Martelo","Braquial/antebraço",["10–12","10–12","10–12"],"60s","Última: rest-pause","Punhos neutros do início ao fim.","Neutra"),
       ]},
       B2: { day:"SEX", label:"Peito + Ombros + Tríceps", exercises:[
-        ex("Supino Reto Máquina","Peito — outro ângulo",["15–20","10–15","8–12","6–10"],"2–3 min","Última: strip set","Excêntrica controlada."),
-        ex("Fly Máquina","Peito — contração",["12–15","12–15","12–15"],"45–60s","Última: rest-pause","Segure 1s no pico."),
-        ex("Elevação Lateral Máquina","Deltoide lateral (2ª/semana)",["12–15","12–15","12–15","12–15"],"60s","Última: drop set","Cotovelos lideram o movimento."),
-        ex("Desenvolvimento Máquina","Deltoide anterior",["10–12","10–12","10–12"],"90s","","Sem hiperestender os cotovelos."),
-        ex("Tríceps Máquina Articulada","Tríceps — lateral/medial",["8–10","8–10","8–10"],"60s","","Carga alta com técnica."),
-        ex("Tríceps Francês Corda","Tríceps — cabeça longa",["10–12","10–12","10–12"],"45s","Última: LP","Alongamento máximo atrás da cabeça."),
+        ex("Supino Reto Máquina","Peito — outro ângulo",["15–20","10–15","8–12","6–10"],"2–3 min","Última: strip set","Excêntrica controlada.","Pronada"),
+        ex("Fly Máquina","Peito — contração",["12–15","12–15","12–15"],"45–60s","Última: rest-pause","Segure 1s no pico.","Neutra"),
+        ex("Elevação Lateral Máquina","Deltoide lateral (2ª/semana)",["12–15","12–15","12–15","12–15"],"60s","Última: drop set","Cotovelos lideram o movimento.","Neutra"),
+        ex("Desenvolvimento Máquina","Deltoide anterior",["10–12","10–12","10–12"],"90s","","Sem hiperestender os cotovelos.","Neutra"),
+        ex("Tríceps Máquina Articulada","Tríceps — lateral/medial",["8–10","8–10","8–10"],"60s","","Carga alta com técnica.","Neutra"),
+        ex("Tríceps Francês Corda","Tríceps — cabeça longa",["10–12","10–12","10–12"],"45s","Última: LP","Alongamento máximo atrás da cabeça.","Neutra"),
       ]}
     };
   }
 
   let DATA = loadData();
   let PROGRESS = loadProgress();
+  let CATALOG = loadCatalog();
   let current = ORDER[0];
   let mode = "treino";
+  let expandedVideos = {};
+  let expandedThumbs = {};
 
   function loadData() {
     try { const raw = localStorage.getItem(DATA_KEY); if (raw) return JSON.parse(raw); } catch (e) {}
@@ -268,6 +279,27 @@
     return {};
   }
   function saveProgress() { try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(PROGRESS)); } catch (e) {} }
+  function loadCatalog() {
+    try { const raw = localStorage.getItem(CATALOG_KEY); if (raw) return JSON.parse(raw); } catch (e) {}
+    const names = new Set();
+    Object.values(DATA).forEach(d => d.exercises.forEach(e => names.add(e.name)));
+    const arr = Array.from(names).sort((a,b) => a.localeCompare(b, "pt-BR"));
+    saveCatalog(arr);
+    return arr;
+  }
+  function saveCatalog(arr) { try { localStorage.setItem(CATALOG_KEY, JSON.stringify(arr)); } catch (e) {} }
+  function addToCatalog(name) {
+    if (!name || CATALOG.includes(name)) return;
+    CATALOG.push(name);
+    CATALOG.sort((a,b) => a.localeCompare(b, "pt-BR"));
+    saveCatalog(CATALOG);
+  }
+
+  function getYouTubeId(url) {
+    if (!url) return null;
+    const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{6,})/);
+    return m ? m[1] : null;
+  }
 
   const tabsEl = document.getElementById("tabs");
   const titleEl = document.getElementById("day-title");
@@ -382,10 +414,20 @@
   function renderTreinoCard(exItem, i) {
     const card = document.createElement("div");
     card.className = "ex-card";
+    const vidId = getYouTubeId(exItem.video);
+    const videoKey = current + ":" + i;
     let inner = ''
       + '<div class="ex-top"><div><div class="ex-name">' + exItem.name + '</div>'
-      + '<div class="ex-focus">' + exItem.focus + '</div></div><div class="ex-num">' + (i+1) + '</div></div>'
-      + '<div class="sets-row">';
+      + '<div class="ex-focus-row"><span class="ex-focus">' + exItem.focus + '</span>'
+      + (exItem.grip && exItem.grip !== "—" ? '<span class="grip-chip">Pegada ' + exItem.grip + '</span>' : '')
+      + '</div></div><div class="ex-num">' + (i+1) + '</div></div>';
+
+    if (exItem.img) {
+      inner += '<div class="ex-thumb' + (expandedThumbs[videoKey] ? " expanded" : "") + '" data-thumbkey="' + videoKey + '">'
+        + '<img src="' + exItem.img + '" alt="' + exItem.name + '" loading="lazy" onerror="this.parentElement.style.display=\'none\'" /></div>';
+    }
+
+    inner += '<div class="sets-row">';
     exItem.sets.forEach((r, s) => {
       const isLast = s === exItem.sets.length - 1;
       const doneKey = "done:" + pKey(i, s);
@@ -398,11 +440,24 @@
         + '<input type="checkbox" data-key="' + doneKey + '" ' + checked + ' /></div>';
     });
     inner += '</div>';
+
     inner += '<div class="meta-row"><div class="meta-left">'
       + (exItem.tech ? '<span class="tech-chip">' + exItem.tech + '</span>' : '')
-      + 'Intervalo: ' + exItem.interval + '</div>'
-      + '<button class="timer-btn" data-rest="' + exItem.interval.replace(/"/g,'&quot;') + '">'
-      + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>Descanso</button></div>';
+      + 'Intervalo: ' + exItem.interval + '</div><div class="pill-btn-group">';
+    if (vidId) {
+      inner += '<button class="pill-btn" data-vidtoggle="' + videoKey + '">'
+        + '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Vídeo</button>';
+    }
+    inner += '<button class="pill-btn" data-rest="' + exItem.interval.replace(/"/g,'&quot;') + '">'
+      + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>Descanso</button>';
+    inner += '</div></div>';
+
+    if (vidId) {
+      inner += '<div class="video-wrap' + (expandedVideos[videoKey] ? " show" : "") + '" data-videowrap="' + videoKey + '">'
+        + (expandedVideos[videoKey] ? '<iframe src="https://www.youtube.com/embed/' + vidId + '" allowfullscreen loading="lazy"></iframe>' : '')
+        + '</div>';
+    }
+
     if (exItem.exec) inner += '<div class="exec">' + exItem.exec + '</div>';
     card.innerHTML = inner;
     return card;
@@ -413,12 +468,52 @@
     card.className = "ex-card";
 
     const nameLbl = document.createElement("div"); nameLbl.className="field-label"; nameLbl.textContent="Exercício";
-    const nameInput = document.createElement("input"); nameInput.className="edit-input name-input"; nameInput.value=exItem.name;
-    nameInput.oninput = () => { exItem.name = nameInput.value; saveData(DATA); };
+    const nameSelect = document.createElement("select"); nameSelect.className="edit-select";
+    if (!CATALOG.includes(exItem.name)) addToCatalog(exItem.name);
+    CATALOG.forEach(n => {
+      const opt = document.createElement("option"); opt.value = n; opt.textContent = n;
+      if (exItem.name === n) opt.selected = true;
+      nameSelect.appendChild(opt);
+    });
+    const newOpt = document.createElement("option"); newOpt.value = NEW_OPTION; newOpt.textContent = "+ Cadastrar novo exercício";
+    nameSelect.appendChild(newOpt);
+    nameSelect.onchange = () => {
+      if (nameSelect.value === NEW_OPTION) {
+        const newName = prompt("Nome do novo exercício:");
+        if (newName && newName.trim()) {
+          exItem.name = newName.trim();
+          addToCatalog(exItem.name);
+          saveData(DATA);
+          renderExercises();
+        } else {
+          nameSelect.value = exItem.name;
+        }
+      } else {
+        exItem.name = nameSelect.value;
+        saveData(DATA);
+      }
+    };
 
     const focusLbl = document.createElement("div"); focusLbl.className="field-label"; focusLbl.textContent="Foco / músculo";
     const focusInput = document.createElement("input"); focusInput.className="edit-input"; focusInput.value=exItem.focus;
     focusInput.oninput = () => { exItem.focus = focusInput.value; saveData(DATA); };
+
+    const gripLbl = document.createElement("div"); gripLbl.className="field-label"; gripLbl.textContent="Pegada";
+    const gripSelect = document.createElement("select"); gripSelect.className="edit-select";
+    GRIPS.forEach(g => {
+      const opt = document.createElement("option"); opt.value = g; opt.textContent = g;
+      if (exItem.grip === g) opt.selected = true;
+      gripSelect.appendChild(opt);
+    });
+    gripSelect.onchange = () => { exItem.grip = gripSelect.value; saveData(DATA); };
+
+    const imgLbl = document.createElement("div"); imgLbl.className="field-label"; imgLbl.textContent="Imagem (URL, opcional)";
+    const imgInput = document.createElement("input"); imgInput.className="edit-input"; imgInput.placeholder="https://..."; imgInput.value=exItem.img;
+    imgInput.oninput = () => { exItem.img = imgInput.value; saveData(DATA); };
+
+    const vidLbl = document.createElement("div"); vidLbl.className="field-label"; vidLbl.textContent="Vídeo (link do YouTube, opcional)";
+    const vidInput = document.createElement("input"); vidInput.className="edit-input"; vidInput.placeholder="https://youtube.com/watch?v=..."; vidInput.value=exItem.video;
+    vidInput.oninput = () => { exItem.video = vidInput.value; saveData(DATA); };
 
     const setsLbl = document.createElement("div"); setsLbl.className="field-label"; setsLbl.textContent="Séries (reps por série)";
     const setsRow = document.createElement("div"); setsRow.className="set-edit-row";
@@ -460,8 +555,11 @@
     delBtn.onclick = () => { list.splice(i,1); saveData(DATA); renderExercises(); };
     actions.appendChild(upBtn); actions.appendChild(downBtn); actions.appendChild(delBtn);
 
-    card.appendChild(nameLbl); card.appendChild(nameInput);
+    card.appendChild(nameLbl); card.appendChild(nameSelect);
     card.appendChild(focusLbl); card.appendChild(focusInput);
+    card.appendChild(gripLbl); card.appendChild(gripSelect);
+    card.appendChild(imgLbl); card.appendChild(imgInput);
+    card.appendChild(vidLbl); card.appendChild(vidInput);
     card.appendChild(setsLbl); card.appendChild(setsRow);
     card.appendChild(intLbl); card.appendChild(intInput);
     card.appendChild(techLbl); card.appendChild(techInput);
@@ -475,7 +573,6 @@
     exEl.innerHTML = "";
     if (mode === "treino") {
       d.exercises.forEach((exItem, i) => exEl.appendChild(renderTreinoCard(exItem, i)));
-
       exEl.querySelectorAll('input[type="checkbox"]').forEach(box => {
         box.addEventListener("change", () => {
           PROGRESS[box.getAttribute("data-key")] = box.checked;
@@ -490,8 +587,22 @@
           saveProgress();
         });
       });
-      exEl.querySelectorAll('.timer-btn').forEach(btn => {
+      exEl.querySelectorAll('[data-rest]').forEach(btn => {
         btn.addEventListener("click", () => startTimer(parseRestSeconds(btn.getAttribute("data-rest"))));
+      });
+      exEl.querySelectorAll('[data-vidtoggle]').forEach(btn => {
+        btn.addEventListener("click", () => {
+          const key = btn.getAttribute("data-vidtoggle");
+          expandedVideos[key] = !expandedVideos[key];
+          renderExercises();
+        });
+      });
+      exEl.querySelectorAll('[data-thumbkey]').forEach(thumb => {
+        thumb.addEventListener("click", () => {
+          const key = thumb.getAttribute("data-thumbkey");
+          expandedThumbs[key] = !expandedThumbs[key];
+          thumb.classList.toggle("expanded", expandedThumbs[key]);
+        });
       });
       updateDayProgress();
     } else {
@@ -500,7 +611,7 @@
       addExBtn.className = "add-ex-btn";
       addExBtn.textContent = "+ Adicionar exercício";
       addExBtn.onclick = () => {
-        d.exercises.push(ex("Novo exercício","", ["8–12","8–12","8–12"], "60s", "", ""));
+        d.exercises.push(ex("Novo exercício","", ["8–12","8–12","8–12"], "60s", "", "", "—", "", ""));
         saveData(DATA);
         renderExercises();
       };
@@ -547,7 +658,9 @@
       try {
         const parsed = JSON.parse(reader.result);
         if (ORDER.every(code => parsed[code] && Array.isArray(parsed[code].exercises))) {
-          DATA = parsed; saveData(DATA); render();
+          DATA = parsed; saveData(DATA);
+          CATALOG = loadCatalog();
+          render();
         } else { alert("Arquivo inválido — não parece uma ficha exportada por este app."); }
       } catch (err) { alert("Não consegui ler esse arquivo JSON."); }
     };
