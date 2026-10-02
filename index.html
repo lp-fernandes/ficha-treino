@@ -507,13 +507,32 @@
     });
     gripSelect.onchange = () => { exItem.grip = gripSelect.value; saveData(DATA); };
 
-    const imgLbl = document.createElement("div"); imgLbl.className="field-label"; imgLbl.textContent="Imagem (URL, opcional)";
+    const imgLbl = document.createElement("div"); imgLbl.className="field-label"; imgLbl.textContent="Imagem (link direto, ex: termina em .jpg/.png)";
     const imgInput = document.createElement("input"); imgInput.className="edit-input"; imgInput.placeholder="https://..."; imgInput.value=exItem.img;
-    imgInput.oninput = () => { exItem.img = imgInput.value; saveData(DATA); };
+    const imgPreview = document.createElement("div"); imgPreview.style.cssText = "margin-top:6px;font-size:10.5px;color:var(--text-dim2);";
+    function updateImgPreview() {
+      imgPreview.innerHTML = "";
+      if (!imgInput.value) { imgPreview.textContent = ""; return; }
+      const testImg = document.createElement("img");
+      testImg.src = imgInput.value;
+      testImg.style.cssText = "max-height:70px;border-radius:6px;display:block;margin-top:2px;";
+      testImg.onload = () => { imgPreview.innerHTML = "✓ imagem carregada"; imgPreview.style.color = "var(--gold)"; imgPreview.appendChild(testImg); };
+      testImg.onerror = () => { imgPreview.innerHTML = "✕ não carregou — precisa ser um link direto de imagem (termina em .jpg, .png etc), não o link de uma página"; imgPreview.style.color = "var(--tag-tech)"; };
+    }
+    imgInput.oninput = () => { exItem.img = imgInput.value; saveData(DATA); updateImgPreview(); };
+    updateImgPreview();
 
-    const vidLbl = document.createElement("div"); vidLbl.className="field-label"; vidLbl.textContent="Vídeo (link do YouTube, opcional)";
+    const vidLbl = document.createElement("div"); vidLbl.className="field-label"; vidLbl.textContent="Vídeo (link completo do YouTube, opcional)";
     const vidInput = document.createElement("input"); vidInput.className="edit-input"; vidInput.placeholder="https://youtube.com/watch?v=..."; vidInput.value=exItem.video;
-    vidInput.oninput = () => { exItem.video = vidInput.value; saveData(DATA); };
+    const vidPreview = document.createElement("div"); vidPreview.style.cssText = "margin-top:6px;font-size:10.5px;color:var(--text-dim2);";
+    function updateVidPreview() {
+      if (!vidInput.value) { vidPreview.textContent = ""; return; }
+      const id = getYouTubeId(vidInput.value);
+      vidPreview.textContent = id ? "✓ link reconhecido" : "✕ não reconhecido como link do YouTube — cole a URL completa (youtube.com/watch?v=... ou youtu.be/...)";
+      vidPreview.style.color = id ? "var(--gold)" : "var(--tag-tech)";
+    }
+    vidInput.oninput = () => { exItem.video = vidInput.value; saveData(DATA); updateVidPreview(); };
+    updateVidPreview();
 
     const setsLbl = document.createElement("div"); setsLbl.className="field-label"; setsLbl.textContent="Séries (reps por série)";
     const setsRow = document.createElement("div"); setsRow.className="set-edit-row";
@@ -558,8 +577,8 @@
     card.appendChild(nameLbl); card.appendChild(nameSelect);
     card.appendChild(focusLbl); card.appendChild(focusInput);
     card.appendChild(gripLbl); card.appendChild(gripSelect);
-    card.appendChild(imgLbl); card.appendChild(imgInput);
-    card.appendChild(vidLbl); card.appendChild(vidInput);
+    card.appendChild(imgLbl); card.appendChild(imgInput); card.appendChild(imgPreview);
+    card.appendChild(vidLbl); card.appendChild(vidInput); card.appendChild(vidPreview);
     card.appendChild(setsLbl); card.appendChild(setsRow);
     card.appendChild(intLbl); card.appendChild(intInput);
     card.appendChild(techLbl); card.appendChild(techInput);
