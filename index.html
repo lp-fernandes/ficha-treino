@@ -289,48 +289,50 @@
   function defaultData() {
     return {
       A1: { day:"SEG", label:"Costas (Largura) + Bíceps", exercises:[
-        ex("Puxada Alta Pronada Aberta","Costas — largura",["15–20","10–15","8–12","6–10"],"2–3 min","Última: rest-pause","Cotovelos para os bolsos, alongamento total no topo.","Pronada","","","Costas"),
-        ex("High Row Máquina","Costas — largura/espessura",["8–10","8–10","8–10","8–10"],"90s–2min","Segurar 2s","Peito apoiado, cotovelos para baixo e para trás.","Neutra","","","Costas"),
-        ex("Remada Máquina Guiada","Costas — espessura",["8–10","8–10","8–10"],"90s","Pico contração 2s","Excêntrica de 3s.","Pronada","","","Costas"),
+        ex("Puxada Alta Pronada Aberta","Costas — largura",["15–20","10–15","8–12","6–10"],"2–3 min","Última: rest-pause (3 blocos)","Cotovelos para os bolsos, alongamento total no topo. Rest-pause: vá até a falha, descanse 15s, +4–5 reps, 15s, +3–4 reps.","Pronada","","","Costas"),
+        ex("High Row Máquina","Costas — largura/espessura",["8–10","8–10","8–10","10–12"],"90s–2min","Última: back-off (−20% carga)","Peito apoiado, cotovelos para baixo e para trás. Segure 2s na contração. Na última série reduza ~20% da carga e faça 10–12 reps.","Neutra","","","Costas"),
+        ex("Remada Máquina Guiada","Costas — espessura",["8–10","8–10","8–10"],"90s","Última: pico contração 2s","Excêntrica de 3s.","Pronada","","","Costas"),
         ex("Remada Unilateral Máquina","Corrigir assimetrias",["10–12","10–12","10–12"],"60–90s","","Não gire o tronco, cotovelo passa a linha do corpo.","Neutra","","","Costas"),
-        ex("Reverse Fly Máquina","Deltoide posterior",["12–15","12–15","12–15"],"45s","Última: drop set","Abra os cotovelos, sem elevar os ombros.","Neutra","","","Ombros"),
+        ex("Reverse Fly Máquina","Deltoide posterior",["12–15","12–15","12–15"],"45s","Última: myo-reps (12+4+4)","Abra os cotovelos, sem elevar os ombros. Myo-reps: série até perto da falha, 5 respirações, +4 reps, repita.","Neutra","","","Ombros"),
         ex("Rosca Scott Máquina","Bíceps — pico",["8–10","8–10","8–10"],"60s","Última: drop set","Braço 100% apoiado, sem tirar o cotovelo.","Supinada","","","Bíceps"),
+        ex("Rosca Bayesian Cabo","Bíceps — alongamento (cabeça longa)",["10–12","10–12","10–12"],"45–60s","Última: parciais alongadas (LP)","Polia baixa, de costas para a máquina, braço atrás da linha do corpo. Faça a série e termine com meias-repetições na parte alongada.","Supinada","","","Bíceps"),
       ]},
       B1: { day:"TER", label:"Peito + Ombros + Tríceps", exercises:[
-        ex("Supino Inclinado Máquina","Peito superior",["15–20","10–15","8–12","6–10"],"2–3 min","Última: drop set","Aproxime os braços na subida, não só empurre.","Pronada","","","Peito"),
-        ex("Supino Hammer Strength","Peito — espessura",["8–10","8–10","8–10","8–10"],"90s–2min","","Controle total, ombros fixos no banco.","Neutra","","","Peito"),
+        ex("Supino Inclinado Máquina","Peito superior",["15–20","10–15","8–12","6–10"],"2–3 min","Última: drop set","Aproxime os braços na subida, não só empurre.","Pronada","","https://www.youtube.com/watch?v=gtc384aM-90","Peito"),
+        ex("Supino Hammer Strength","Peito — espessura",["8–10","8–10","8–10","8–10"],"90s–2min","Última: rest-pause (3 blocos)","Controle total, ombros fixos no banco. Rest-pause: falha, 15s, +3–4 reps, 15s, +2–3 reps.","Neutra","","","Peito"),
         ex("Fly Inclinado Máquina","Peito — alongamento",["10–12","10–12","10–12"],"60s","Última: LP","Abra como se abraçasse um barril.","Neutra","","","Peito"),
-        ex("Peck Deck","Peito — contração",["12–15","12–15","12–15"],"45–60s","Segurar 2s","Segure 1s na contração.","Neutra","","","Peito"),
+        ex("Crossover Cabo","Peito — contração/porção inferior",["12–15","12–15","12–15"],"45–60s","Última: drop set 6-6-6","Polias altas, braços levemente flexionados, feche à frente do peito e segure 1s. Drop 6-6-6: 6 reps, reduz carga, 6 reps, reduz, 6 reps (18 no total).","Neutra","","https://www.youtube.com/watch?v=tcwMNq8QkEU","Peito"),
         ex("Elevação Lateral Máquina","Deltoide lateral",["12–15","12–15","12–15","12–15"],"60s","Última: drop set","Empurre os cotovelos para os lados.","Neutra","","","Ombros"),
-        ex("Elevação Lateral Cabo","Deltoide lateral — acabamento",["12–15","12–15","12–15"],"45s","","Movimento contínuo, sem embalo.","Neutra","","","Ombros"),
-        ex("Tríceps Máquina Articulada","Tríceps — volume",["8–10","8–10","8–10"],"60s","","Cotovelos fixos, extensão completa sem hiperestender.","Neutra","","","Tríceps"),
+        ex("Elevação Lateral Cabo","Deltoide lateral — acabamento",["12–15","12–15","12–15"],"45s","Última: parciais alongadas (LP)","Movimento contínuo, sem embalo. Termine com meias-repetições na parte baixa.","Neutra","","","Ombros"),
+        ex("Tríceps Máquina Articulada","Tríceps — volume",["8–10","8–10","8–10"],"60s","Última: rest-pause","Cotovelos fixos, extensão completa sem hiperestender.","Neutra","","","Tríceps"),
       ]},
       C: { day:"QUA", label:"Pernas Completo + Core", exercises:[
         ex("Hack Machine","Quadríceps",["15–20","10–15","8–12","6–10"],"2–3 min","Última: drop set","Amplitude máxima que a lombar aguenta estável.","—","","","Pernas"),
-        ex("Leg Press 45°","Quadríceps/glúteo",["15–20","10–15","8–12"],"90s–2min","Última: parciais após falha","Não trave os joelhos no topo.","—","","","Pernas"),
-        ex("Cadeira Extensora","Quadríceps — finalização",["12–15","12–15","12–15"],"30–45s","Última: drop set (2x)","Pico de contração de 2s.","—","","","Pernas"),
+        ex("Leg Press 45°","Quadríceps/glúteo",["15–20","10–15","8–12"],"90s–2min","Última: parciais após falha","Não trave os joelhos no topo.","—","","https://www.youtube.com/watch?v=B0swveEoTnU","Pernas"),
+        ex("Cadeira Extensora","Quadríceps — finalização",["12–15","12–15","12–15"],"30–45s","Última: drop set (2x)","Pico de contração de 2s.","—","","https://www.youtube.com/watch?v=BHxNa16VQ7A","Pernas"),
         ex("Stiff-leg com Halteres","Isquiotibiais/glúteo",["15–20","10–15","8–12","6–10"],"2–3 min","Última: rest-pause","Pegada neutra (sem estresse de barra reta). Quadril leva o movimento.","Neutra","","","Pernas"),
-        ex("Mesa Flexora","Posterior de coxa",["10–12","10–12","10–12","10–12"],"90s","Última: LP","Alongue totalmente entre repetições.","—","","","Pernas"),
-        ex("Cadeira Abdutora","Glúteo médio",["15–20","15–20","15–20"],"45s","","Contração máxima, sem embalo.","—","","","Pernas"),
-        ex("Panturrilha em Pé","Gastrocnêmio",["15–20","10–15","8–12","6–10"],"60s","Última: drop set","Pausa de 2s no alongamento.","—","","","Pernas"),
+        ex("Cadeira Flexora","Posterior de coxa — alongada",["10–12","10–12","10–12","10–12"],"90s","Última: parciais alongadas (LP)","Quadril bem encaixado no encosto, excêntrica de 3s, sem deixar a carga bater. Termine com meias-repetições na parte alongada.","—","","https://www.youtube.com/watch?v=Mqe6s-ueopo","Pernas"),
+        ex("Elevação Pélvica (máquina/Smith)","Glúteo máximo",["12–15","10–12","8–10"],"90s","Última: pausa 2s no topo","Queixo recolhido, costelas para baixo, trave o glúteo no topo por 2s.","—","","https://www.youtube.com/watch?v=JSRjx5pB5aM","Pernas"),
+        ex("Panturrilha em Pé","Gastrocnêmio",["15–20","10–15","8–12","6–10"],"60s","Última: drop set","Pausa de 2s no alongamento.","—","","https://www.youtube.com/watch?v=xU9KCMZkoxo","Pernas"),
         ex("Panturrilha Sentada","Sóleo",["12–20","12–20","12–20"],"60s","Última: myo-reps","Amplitude completa, pausa embaixo.","—","","","Pernas"),
         ex("Abdominal Máquina + Prancha","Core",["12–15","12–15","30–45s"],"45s","","Movimento vem do abdômen, sem embalar o quadril.","—","","","Core"),
       ]},
       A2: { day:"QUI", label:"Costas (Espessura) + Bíceps", exercises:[
-        ex("Puxada Alta Supinada","Costas — dorsal inferior",["15–20","10–15","8–12","6–10"],"2–3 min","Última: pico contração 2s","Pense em \"trazer os cotovelos para os bolsos\".","Supinada","","","Costas"),
-        ex("Puxada Alta Fechada Neutra","Costas — densidade",["8–10","8–10","8–10","8–10"],"90s","Segurar 1s embaixo","Segure 1s embaixo do movimento.","Neutra","","","Costas"),
-        ex("Remada Baixa Triângulo","Costas — espessura média",["8–10","8–10","8–10"],"90s","","Feche as escápulas sem balançar o tronco.","Neutra","","","Costas"),
-        ex("Front Pulldown","Costas — abrir dorsais",["8–10","8–10","8–10","8–10"],"90s","","Inicie deprimindo as escápulas, cotovelos para baixo.","Pronada","","","Costas"),
-        ex("Rosca Inclinada Halteres","Bíceps — cabeça longa",["10–12","10–12","10–12"],"60s","","Braço atrás do corpo, ombro não avança.","Supinada","","","Bíceps"),
+        ex("Puxada Alta Supinada","Costas — dorsal inferior",["15–20","10–15","8–12","6–10"],"2–3 min","Última: pico contração 2s","Pense em \"trazer os cotovelos para os bolsos\".","Supinada","","https://www.youtube.com/watch?v=Uj58KaUkEEQ","Costas"),
+        ex("Puxada Alta Fechada Neutra","Costas — densidade",["8–10","8–10","8–10","10–12"],"90s","Última: back-off (−20% carga)","Segure 1s embaixo do movimento. Na última série reduza ~20% da carga e faça 10–12 reps.","Neutra","","https://www.youtube.com/watch?v=WDwg-G7kY3c","Costas"),
+        ex("Remada Baixa Triângulo","Costas — espessura média",["8–10","8–10","8–10"],"90s","Última: rest-pause (3×4, 5s)","Feche as escápulas sem balançar o tronco. Rest-pause: 4 reps, 5s de pausa, 4 reps, 5s, 4 reps.","Neutra","","https://www.youtube.com/watch?v=yZtFixy6_ek","Costas"),
+        ex("Pullover Cabo","Costas — dorsal alongada",["10–12","10–12","10–12"],"60–90s","Última: parciais alongadas (LP)","Braços quase estendidos, puxe com as dorsais e alongue bem no topo, sem arquear a lombar.","Neutra","","","Costas"),
+        ex("Crucifixo Inverso Banco 75° (halteres)","Deltoide posterior",["12–15","12–15","12–15"],"45s","Última: myo-reps (12+4+4)","Peito apoiado no banco, cotovelos abertos, sem balançar o tronco.","Neutra","","https://www.youtube.com/watch?v=7EGNBHUpPyo","Ombros"),
+        ex("Rosca Inclinada Halteres","Bíceps — cabeça longa",["10–12","10–12","10–12"],"60s","Última: drop set","Braço atrás do corpo, ombro não avança.","Supinada","","https://www.youtube.com/watch?v=xcDpo1Ubi5k","Bíceps"),
         ex("Rosca Martelo","Braquial/antebraço",["10–12","10–12","10–12"],"60s","Última: rest-pause","Punhos neutros do início ao fim.","Neutra","","","Bíceps"),
       ]},
       B2: { day:"SEX", label:"Peito + Ombros + Tríceps", exercises:[
-        ex("Supino Reto Máquina","Peito — outro ângulo",["15–20","10–15","8–12","6–10"],"2–3 min","Última: strip set","Excêntrica controlada.","Pronada","","","Peito"),
+        ex("Supino Reto Máquina","Peito — outro ângulo",["15–20","10–15","8–12","6–10"],"2–3 min","Última: strip set","Excêntrica controlada.","Pronada","","https://www.youtube.com/watch?v=XsgR_hm8AWA","Peito"),
         ex("Fly Máquina","Peito — contração",["12–15","12–15","12–15"],"45–60s","Última: rest-pause","Segure 1s no pico.","Neutra","","","Peito"),
-        ex("Elevação Lateral Máquina","Deltoide lateral (2ª/semana)",["12–15","12–15","12–15","12–15"],"60s","Última: drop set","Cotovelos lideram o movimento.","Neutra","","","Ombros"),
-        ex("Desenvolvimento Máquina","Deltoide anterior",["10–12","10–12","10–12"],"90s","","Sem hiperestender os cotovelos.","Neutra","","","Ombros"),
-        ex("Tríceps Máquina Articulada","Tríceps — lateral/medial",["8–10","8–10","8–10"],"60s","","Carga alta com técnica.","Neutra","","","Tríceps"),
-        ex("Tríceps Francês Corda","Tríceps — cabeça longa",["10–12","10–12","10–12"],"45s","Última: LP","Alongamento máximo atrás da cabeça.","Neutra","","","Tríceps"),
+        ex("Elevação Lateral Máquina","Deltoide lateral (2ª/semana)",["12–15","12–15","12–15","12–15"],"60s","Última: myo-reps (12+4+4+4)","Cotovelos lideram o movimento. Myo-reps: série até perto da falha, 5 respirações, +4 reps, repita.","Neutra","","","Ombros"),
+        ex("Desenvolvimento Máquina","Deltoide anterior",["10–12","10–12","10–12"],"90s","Última: rest-pause","Sem hiperestender os cotovelos.","Neutra","","","Ombros"),
+        ex("Tríceps Francês Corda","Tríceps — cabeça longa",["10–12","10–12","10–12"],"60s","Última: parciais alongadas (LP)","Alongamento máximo atrás da cabeça. Termine com meias-repetições na parte alongada.","Neutra","","https://www.youtube.com/watch?v=4piO_WPmCCE","Tríceps"),
+        ex("Tríceps Corda no Cabo","Tríceps — lateral/medial",["10–12","10–12","10–12"],"45s","Última: drop set 6-6-6","Cotovelos colados ao corpo, abra a corda no fim da extensão. Drop 6-6-6: 6 reps, reduz carga, 6, reduz, 6.","Neutra","","https://www.youtube.com/watch?v=sgs7VfTbhfk","Tríceps"),
       ]}
     };
   }
@@ -378,8 +380,8 @@
   }
   function saveProgress() { try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(PROGRESS)); } catch (e) {} }
   function loadCatalog() {
-    try { const raw = localStorage.getItem(CATALOG_KEY); if (raw) return JSON.parse(raw); } catch (e) {}
     const names = new Set();
+    try { const raw = localStorage.getItem(CATALOG_KEY); if (raw) JSON.parse(raw).forEach(n => names.add(n)); } catch (e) {}
     Object.values(DATA).forEach(d => d.exercises.forEach(e => names.add(e.name)));
     const arr = Array.from(names).sort((a,b) => a.localeCompare(b, "pt-BR"));
     saveCatalog(arr);
