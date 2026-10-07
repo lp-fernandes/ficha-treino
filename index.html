@@ -190,6 +190,12 @@
     border-radius:var(--radius); padding:10px 12px; margin-top:14px; line-height:1.4; }
   .install-tip strong { color:var(--gold); }
   .day-select-row { margin-bottom:10px; }
+  .plan-bar { margin:0 0 10px; }
+  .plan-bar select { width:100%; padding:10px 12px; border-radius:12px; border:1px solid var(--line); background:var(--bg-card); color:var(--text); font-size:13px; font-weight:700; }
+  .sync-box { margin-top:16px; padding:12px; border:1px solid var(--line); border-radius:var(--radius); background:var(--bg-card); }
+  .sync-box h3 { margin:0 0 8px; font-size:12px; }
+  .sync-box input { width:100%; box-sizing:border-box; margin-bottom:6px; padding:9px 10px; border-radius:10px; border:1px solid var(--line); background:var(--bg-input); color:var(--text); font-size:12px; }
+  .sync-box .st { font-size:10px; color:var(--text-dim2); margin-top:8px; line-height:1.4; }
 </style>
 </head>
 <body>
@@ -201,6 +207,8 @@
       <div class="sub" id="screen-sub">Hipertrofia · V-Shape</div>
     </div>
   </div>
+
+  <div class="plan-bar" id="plan-bar"></div>
 
   <div id="tab-treino">
     <div class="tabs" id="tabs"></div>
@@ -223,12 +231,26 @@
     <div id="exercises-edit"></div>
     <div id="editar-footer">
       <div class="toolbar">
+        <button id="plan-new">+ Nova ficha</button>
+        <button id="plan-dup">⧉ Duplicar</button>
+        <button id="plan-ren">✎ Renomear</button>
+        <button class="danger-btn" id="plan-del">🗑 Excluir</button>
+      </div>
+      <div class="toolbar">
         <button id="export-btn">⤓ Exportar ficha</button>
         <label for="import-input">⤒ Importar ficha</label>
         <input type="file" id="import-input" accept="application/json" />
         <button class="danger-btn" id="restore-btn">⟲ Restaurar padrão</button>
       </div>
-      <div class="footer-note">As alterações são salvas automaticamente neste navegador.</div>
+      <div class="sync-box">
+        <h3>☁ Sincronização entre aparelhos</h3>
+        <input id="sync-url" placeholder="URL do projeto Supabase (https://xxxx.supabase.co)" autocomplete="off" />
+        <input id="sync-key" placeholder="Chave anon (public)" autocomplete="off" />
+        <input id="sync-code" placeholder="Código secreto (mín. 8 caracteres, igual em todos os aparelhos)" autocomplete="off" />
+        <div class="toolbar" style="margin-top:4px;"><button id="sync-connect">Conectar</button><button class="danger-btn" id="sync-off">Desconectar</button></div>
+        <div class="st" id="sync-status">Não conectado — as alterações ficam só neste aparelho.</div>
+      </div>
+      <div class="footer-note">As alterações são salvas automaticamente neste aparelho e, com a nuvem conectada, em todos os outros.</div>
     </div>
   </div>
 
@@ -277,6 +299,10 @@
   const DATA_KEY = "ficha_treino_data_v5";
   const PROGRESS_KEY = "ficha_treino_progress_v5";
   const CATALOG_KEY = "ficha_treino_catalog_v1";
+  const STORE_KEY = "ficha_treino_store_v6";
+  const SYNC_KEY = "ficha_treino_sync_v1";
+  let SYNC = {};
+  let pushTimer = null;
   const GRIPS = ["—","Pronada","Supinada","Neutra"];
   const CATEGORIES = ["Costas","Peito","Ombros","Bíceps","Tríceps","Pernas","Core","Outros"];
   const NEW_OPTION = "__novo__";
@@ -349,45 +375,69 @@
     return "Outros";
   }
 
-  let DATA = loadData();
-  let PROGRESS = loadProgress();
+  const DEFAULT_SUPA = { url: "https://otzzhcclymeozwnhcydg.supabase.co", key: "sb_publishable_5CI7Q72lugs5UgWTeYp5Ww_XmUPRZlb" };
+  try { SYNC = JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; } catch (e) { SYNC = {}; }
+  SYNC = Object.assign({}, DEFAULT_SUPA, SYNC);
+  let STORE = loadStore();
+  let DATA = STORE.plans[STORE.active].data;
+  let PROGRESS = STORE.plans[STORE.active].progress;
   let CATALOG = loadCatalog();
   let current = ORDER[0];
   let activeTab = "treino"; // treino | biblioteca | editar
   let libFilter = "Todos";
   let detailBackTab = "treino";
 
-  function loadData() {
-    let d;
-    try { const raw = localStorage.getItem(DATA_KEY); d = raw ? JSON.parse(raw) : null; } catch (e) { d = null; }
-    if (!d) { d = defaultData(); saveData(d); return d; }
-    let migrated = false;
+  function newId() { return "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
+  function normalizeData(d) {
     Object.keys(d).forEach(code => {
       d[code].exercises.forEach(e => {
-        if (e.category === undefined) { e.category = inferCategory(e); migrated = true; }
-        if (e.img === undefined) { e.img = ""; migrated = true; }
-        if (e.video === undefined) { e.video = ""; migrated = true; }
-        if (e.grip === undefined) { e.grip = "—"; migrated = true; }
+        if (e.category === undefined) e.category = inferCategory(e);
+        if (e.img === undefined) e.img = "";
+        if (e.video === undefined) e.video = "";
+        if (e.grip === undefined) e.grip = "—";
       });
     });
-    if (migrated) saveData(d);
     return d;
   }
-  function saveData(d) { try { localStorage.setItem(DATA_KEY, JSON.stringify(d)); } catch (e) {} }
-  function loadProgress() {
+  function legacyData() {
+    let d;
+    try { const raw = localStorage.getItem(DATA_KEY); d = raw ? JSON.parse(raw) : null; } catch (e) { d = null; }
+    return normalizeData(d || defaultData());
+  }
+  function legacyProgress() {
     try { const raw = localStorage.getItem(PROGRESS_KEY); if (raw) return JSON.parse(raw); } catch (e) {}
     return {};
   }
-  function saveProgress() { try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(PROGRESS)); } catch (e) {} }
+  function loadStore() {
+    let st = null;
+    try { const raw = localStorage.getItem(STORE_KEY); if (raw) st = JSON.parse(raw); } catch (e) {}
+    if (st && st.plans && st.plans[st.active]) {
+      Object.values(st.plans).forEach(pl => { normalizeData(pl.data); pl.progress = pl.progress || {}; });
+      return st;
+    }
+    let cat = [];
+    try { const raw = localStorage.getItem(CATALOG_KEY); if (raw) cat = JSON.parse(raw); } catch (e) {}
+    const id = newId();
+    st = { v: 6, active: id, plans: {}, catalog: cat, updated: 0 };
+    st.plans[id] = { name: "Plano 1", data: legacyData(), progress: legacyProgress() };
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(st)); } catch (e) {}
+    return st;
+  }
+  function persist() {
+    STORE.updated = Date.now();
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(STORE)); } catch (e) {}
+    schedulePush();
+  }
+  function saveData(d) { STORE.plans[STORE.active].data = d; persist(); }
+  function saveProgress() { STORE.plans[STORE.active].progress = PROGRESS; persist(); }
   function loadCatalog() {
-    const names = new Set();
-    try { const raw = localStorage.getItem(CATALOG_KEY); if (raw) JSON.parse(raw).forEach(n => names.add(n)); } catch (e) {}
-    Object.values(DATA).forEach(d => d.exercises.forEach(e => names.add(e.name)));
+    const names = new Set(STORE.catalog || []);
+    Object.values(STORE.plans).forEach(pl => Object.values(pl.data).forEach(d => d.exercises.forEach(e => names.add(e.name))));
     const arr = Array.from(names).sort((a,b) => a.localeCompare(b, "pt-BR"));
-    saveCatalog(arr);
+    if (JSON.stringify(arr) !== JSON.stringify(STORE.catalog || [])) saveCatalog(arr);
     return arr;
   }
-  function saveCatalog(arr) { try { localStorage.setItem(CATALOG_KEY, JSON.stringify(arr)); } catch (e) {} }
+  function saveCatalog(arr) { STORE.catalog = arr; persist(); }
   function addToCatalog(name) {
     if (!name || CATALOG.includes(name)) return;
     CATALOG.push(name);
@@ -882,6 +932,7 @@
   // ---- nav / screens ----
   function setActiveTab(tab) {
     activeTab = tab;
+    renderPlanBar();
     tabTreino.style.display = tab === "treino" ? "block" : "none";
     tabBiblioteca.style.display = tab === "biblioteca" ? "block" : "none";
     tabEditar.style.display = tab === "editar" ? "block" : "none";
@@ -890,7 +941,7 @@
     navTreino.classList.toggle("active", tab === "treino");
     navBiblioteca.classList.toggle("active", tab === "biblioteca");
     navEditar.classList.toggle("active", tab === "editar");
-    if (tab === "treino") { screenTitle.textContent = "Ficha de Treino"; screenSub.textContent = "Hipertrofia · V-Shape"; renderTreino(); }
+    if (tab === "treino") { screenTitle.textContent = "Ficha de Treino"; screenSub.textContent = STORE.plans[STORE.active].name; renderTreino(); }
     if (tab === "biblioteca") { screenTitle.textContent = "Exercícios"; screenSub.textContent = CATALOG.length + " cadastrados"; renderBiblioteca(); }
     if (tab === "editar") { screenTitle.textContent = "Editar Ficha"; screenSub.textContent = "Monte sua ficha"; renderEditar(); }
   }
@@ -909,7 +960,7 @@
     const blob = new Blob([JSON.stringify(DATA, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = "ficha_treino.json";
+    a.href = url; a.download = (STORE.plans[STORE.active].name || "ficha_treino").replace(/[^\w\-]+/g, "_") + ".json";
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
@@ -921,7 +972,7 @@
       try {
         const parsed = JSON.parse(reader.result);
         if (ORDER.every(code => parsed[code] && Array.isArray(parsed[code].exercises))) {
-          DATA = parsed; saveData(DATA); CATALOG = loadCatalog(); setActiveTab(activeTab);
+          addPlan(file.name.replace(/\.json$/i, "") || "Ficha importada", parsed);
         } else { alert("Arquivo inválido — não parece uma ficha exportada por este app."); }
       } catch (err) { alert("Não consegui ler esse arquivo JSON."); }
     };
@@ -936,7 +987,121 @@
     }
   };
 
+  // ---- fichas (planos) ----
+  function renderPlanBar() {
+    const bar = document.getElementById("plan-bar");
+    bar.innerHTML = "";
+    const sel = document.createElement("select");
+    Object.keys(STORE.plans).forEach(id => {
+      const o = document.createElement("option");
+      o.value = id; o.textContent = "🏋 " + STORE.plans[id].name;
+      if (id === STORE.active) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.onchange = () => switchPlan(sel.value);
+    bar.appendChild(sel);
+  }
+  function switchPlan(id) {
+    STORE.active = id; DATA = STORE.plans[id].data; PROGRESS = STORE.plans[id].progress;
+    current = ORDER[0]; persist(); setActiveTab(activeTab);
+  }
+  function addPlan(name, data) {
+    const id = newId();
+    STORE.plans[id] = { name: name, data: normalizeData(data), progress: {} };
+    CATALOG = loadCatalog(); switchPlan(id);
+  }
+  document.getElementById("plan-new").onclick = () => {
+    const n = prompt("Nome da nova ficha (começa com o modelo padrão do app):", "Ficha " + (Object.keys(STORE.plans).length + 1));
+    if (n && n.trim()) addPlan(n.trim(), defaultData());
+  };
+  document.getElementById("plan-dup").onclick = () => {
+    const n = prompt("Nome da cópia:", STORE.plans[STORE.active].name + " (cópia)");
+    if (n && n.trim()) addPlan(n.trim(), JSON.parse(JSON.stringify(DATA)));
+  };
+  document.getElementById("plan-ren").onclick = () => {
+    const n = prompt("Novo nome da ficha:", STORE.plans[STORE.active].name);
+    if (n && n.trim()) { STORE.plans[STORE.active].name = n.trim(); persist(); setActiveTab(activeTab); }
+  };
+  document.getElementById("plan-del").onclick = () => {
+    const ids = Object.keys(STORE.plans);
+    if (ids.length < 2) { alert("Você precisa manter pelo menos uma ficha."); return; }
+    if (!confirm('Excluir a ficha "' + STORE.plans[STORE.active].name + '" e todo o progresso dela?')) return;
+    delete STORE.plans[STORE.active];
+    switchPlan(Object.keys(STORE.plans)[0]);
+  };
+
+  // ---- sincronização (Supabase via REST) ----
+  const syncUrl = document.getElementById("sync-url");
+  const syncKey = document.getElementById("sync-key");
+  const syncCode = document.getElementById("sync-code");
+  function hora() { return new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); }
+  function setStatus(t) { document.getElementById("sync-status").textContent = t; }
+  function syncOn() { return !!(SYNC.url && SYNC.key && SYNC.code); }
+  async function rpc(fn, body) {
+    const base = SYNC.url.replace(/\/+$/, "").replace(/\/rest\/v1$/, "");
+    const headers = { "apikey": SYNC.key, "Content-Type": "application/json" };
+    if (SYNC.key.indexOf("eyJ") === 0) headers["Authorization"] = "Bearer " + SYNC.key;
+    const r = await fetch(base + "/rest/v1/rpc/" + fn, { method: "POST", headers: headers, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const t = await r.text();
+    return t ? JSON.parse(t) : null;
+  }
+  async function push() {
+    if (!syncOn()) return;
+    try { await rpc("ficha_set", { p_code: SYNC.code, p_data: STORE }); setStatus("Salvo na nuvem · " + hora()); }
+    catch (e) { setStatus("Sem conexão com a nuvem — salvo só neste aparelho por enquanto."); }
+  }
+  function schedulePush() {
+    if (!syncOn()) return;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(push, 1500);
+  }
+  function applyRemote(remote) {
+    Object.values(remote.plans).forEach(pl => { normalizeData(pl.data); pl.progress = pl.progress || {}; });
+    STORE = remote;
+    if (!STORE.plans[STORE.active]) STORE.active = Object.keys(STORE.plans)[0];
+    DATA = STORE.plans[STORE.active].data; PROGRESS = STORE.plans[STORE.active].progress;
+    CATALOG = (STORE.catalog || []).slice();
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(STORE)); } catch (e) {}
+    setActiveTab(activeTab);
+  }
+  async function pull() {
+    if (!syncOn()) return;
+    try {
+      setStatus("Sincronizando…");
+      const remote = await rpc("ficha_get", { p_code: SYNC.code });
+      const ru = remote && remote.plans ? (remote.updated || 0) : -1;
+      if (ru > (STORE.updated || 0)) { applyRemote(remote); setStatus("Atualizado da nuvem · " + hora()); }
+      else if (ru < (STORE.updated || 0)) { await push(); }
+      else setStatus("Sincronizado · " + hora());
+    } catch (e) { setStatus("Sem conexão com a nuvem — usando os dados deste aparelho."); }
+  }
+  syncUrl.value = SYNC.url || ""; syncKey.value = SYNC.key || ""; syncCode.value = SYNC.code || "";
+  setStatus(syncOn() ? "Conectado." : "Digite o código secreto e toque em Conectar.");
+  document.getElementById("sync-connect").onclick = async () => {
+    const cfg = { url: syncUrl.value.trim(), key: syncKey.value.trim(), code: syncCode.value.trim() };
+    if (!cfg.url || !cfg.key || cfg.code.length < 8) { alert("Preencha URL, chave e um código secreto com pelo menos 8 caracteres."); return; }
+    SYNC = cfg;
+    try {
+      setStatus("Conectando…");
+      const remote = await rpc("ficha_get", { p_code: SYNC.code });
+      if (remote && remote.plans) {
+        if (confirm("Já existem dados na nuvem com esse código.\nOK = usar os da nuvem neste aparelho.\nCancelar = enviar os deste aparelho e substituir a nuvem.")) applyRemote(remote);
+        else { persist(); await push(); }
+      } else { persist(); await push(); }
+      localStorage.setItem(SYNC_KEY, JSON.stringify(SYNC));
+      setStatus("Conectado · " + hora());
+    } catch (e) { SYNC = Object.assign({}, DEFAULT_SUPA); setStatus("Falha ao conectar. Confira a URL, a chave e se o SQL de configuração foi executado."); }
+  };
+  document.getElementById("sync-off").onclick = () => {
+    SYNC = Object.assign({}, DEFAULT_SUPA); try { localStorage.removeItem(SYNC_KEY); } catch (e) {}
+    syncUrl.value = SYNC.url; syncKey.value = SYNC.key; syncCode.value = "";
+    setStatus("Desconectado — as alterações ficam só neste aparelho.");
+  };
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) pull(); });
+
   setActiveTab("treino");
+  pull();
 })();
 </script>
 </body>
