@@ -245,6 +245,21 @@
   .stu-row button { padding:7px 10px; border-radius:9px; border:1px solid var(--line); background:var(--bg-card2); color:var(--text); font-size:11px; font-weight:700; }
   body.mode-student #nav-editar, body.mode-student #plan-bar, body.mode-student #goto-edit,
   body.mode-student .legacy-sync, body.mode-admin .legacy-sync { display:none !important; }
+  .stu-card { display:flex; align-items:center; gap:12px; padding:12px; margin-bottom:8px; background:var(--bg-card); border:1px solid var(--line); border-radius:14px; cursor:pointer; }
+  .stu-av { width:42px; height:42px; border-radius:50%; background:var(--gold-glow); color:var(--gold); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:17px; flex-shrink:0; }
+  .stu-info { flex:1; min-width:0; }
+  .stu-card .stu-name { flex:none; font-size:14px; font-weight:700; }
+  .stu-sub { font-size:11px; color:var(--text-dim); margin-top:3px; }
+  .empty-note { padding:18px 4px; color:var(--text-dim); font-size:13px; text-align:center; }
+  .role-badge { margin-left:auto; font-size:9.5px; font-weight:800; letter-spacing:.06em; padding:5px 9px; border-radius:999px; background:var(--gold-glow); color:var(--gold); }
+  .stu-sec { font-size:11px; font-weight:800; letter-spacing:.08em; color:var(--text-dim); margin:18px 0 8px; }
+  .stu-actions { display:flex; flex-wrap:wrap; gap:8px; }
+  .stu-actions button, .stu-actions select { padding:11px 12px; border-radius:12px; border:1px solid var(--line); background:var(--bg-card2); color:var(--text); font-size:12px; font-weight:700; }
+  .stu-actions .primary { background:var(--gold); color:#1a0b02; border:none; }
+  .day-stat { display:flex; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); font-size:12.5px; }
+  .day-stat span:last-child { color:var(--text-dim); text-align:right; }
+  #nav-alunos { display:none; }
+  body.mode-admin #nav-alunos { display:flex; }
 </style>
 </head>
 <body>
@@ -274,6 +289,10 @@
   </div>
 
   <div id="tab-editar" style="display:none;">
+    <div class="sync-box" id="stu-banner" style="display:none;margin:0 0 12px;">
+      <div id="stu-banner-text" style="font-size:12px;font-weight:700;margin-bottom:8px;"></div>
+      <button class="start-btn" id="stu-banner-save" style="margin-top:0;padding:12px;">Salvar ficha no aluno</button>
+    </div>
     <div class="day-title" id="day-title-edit"></div>
     <div class="tabs" id="tabs-edit"></div>
     <div id="exercises-edit"></div>
@@ -290,15 +309,6 @@
         <input type="file" id="import-input" accept="application/json" />
         <button class="danger-btn" id="restore-btn">⟲ Restaurar padrão</button>
       </div>
-      <div class="sync-box" id="admin-box" style="display:none;">
-        <h3>👥 Alunos e biblioteca</h3>
-        <div class="toolbar"><button id="lib-publish">⬆ Publicar biblioteca</button></div>
-        <input id="stu-name" placeholder="Nome do aluno" autocomplete="off" />
-        <input id="stu-wpp" placeholder="WhatsApp com DDD (ex: 44999998888)" inputmode="tel" autocomplete="off" />
-        <div class="toolbar"><button id="stu-add">＋ Criar aluno e enviar link</button></div>
-        <div id="student-list"></div>
-        <div class="st" id="admin-status">Conectado como treinador.</div>
-      </div>
       <div class="sync-box legacy-sync">
         <h3>☁ Sincronização entre aparelhos</h3>
         <input id="sync-url" placeholder="URL do projeto Supabase (https://xxxx.supabase.co)" autocomplete="off" />
@@ -309,6 +319,25 @@
       </div>
       <div class="footer-note">As alterações são salvas automaticamente neste aparelho e, com a nuvem conectada, em todos os outros.</div>
     </div>
+  </div>
+
+  <div id="tab-alunos" style="display:none;">
+    <div class="sec-title" style="margin-top:4px;">NOVO ALUNO</div>
+    <div class="sync-box" style="margin-top:0;">
+      <input id="stu-name" placeholder="Nome do aluno" autocomplete="off" />
+      <input id="stu-wpp" placeholder="WhatsApp com DDD (ex: 44999998888)" inputmode="tel" autocomplete="off" />
+      <button class="start-btn" id="stu-add" style="margin-top:6px;">💬 Cadastrar e enviar link no WhatsApp</button>
+    </div>
+    <div class="sec-head"><span>ALUNOS</span></div>
+    <div id="student-list"></div>
+    <div class="sec-title">MEU ACESSO (TREINADOR)</div>
+    <div class="sync-box" style="margin-top:0;">
+      <input id="adm-wpp" placeholder="Meu WhatsApp com DDD" inputmode="tel" autocomplete="off" />
+      <button class="start-btn" id="adm-link" style="margin-top:6px;background:var(--bg-card2);color:var(--text);box-shadow:none;">Enviar meu link para o WhatsApp</button>
+      <div class="st">Serve para entrar em outro aparelho, sem e-mail.</div>
+    </div>
+    <div class="st" id="admin-status" style="text-align:center;margin:14px 0 8px;">Conectado como treinador.</div>
+    <button id="logout-btn2" style="width:100%;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--bg-card);color:var(--text-dim);font-size:12px;font-weight:700;">Sair da conta</button>
   </div>
 
   <div id="treino-footer">
@@ -323,10 +352,17 @@
     <div style="font-size:42px;">🏋</div>
     <h2>Ficha de Treino</h2>
     <p id="login-msg">Abra o link de acesso que seu treinador enviou pelo WhatsApp.</p>
-    <input id="login-email" type="email" placeholder="Sou o treinador: meu e-mail" autocomplete="email" />
-    <button class="start-btn" id="login-email-btn" style="margin-top:10px;">Receber link por e-mail</button>
+    <details style="margin-top:6px;"><summary style="color:var(--text-dim2);font-size:12px;cursor:pointer;">Sou o treinador e perdi meu acesso</summary>
+      <input id="login-email" type="email" placeholder="Meu e-mail de treinador" autocomplete="email" style="margin-top:10px;" />
+      <button class="start-btn" id="login-email-btn" style="margin-top:10px;">Receber link por e-mail</button>
+    </details>
     <a id="login-local">Usar só neste aparelho, sem login</a>
   </div>
+</div>
+
+<div class="detail-screen" id="stu-screen" style="z-index:66;">
+  <div class="detail-head"><button class="detail-back" id="stu-back">←</button><h2 id="stu-title">Aluno</h2></div>
+  <div class="detail-body" id="stu-body"></div>
 </div>
 
 <div class="session-screen" id="session-screen">
@@ -372,6 +408,10 @@
       <div class="icon-bg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="15" width="7" height="7" rx="1.5"/><rect x="14" y="15" width="7" height="7" rx="1.5"/></svg></div>
       <div class="lbl">Exercícios</div>
     </button>
+    <button class="nav-btn" id="nav-alunos">
+      <div class="icon-bg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg></div>
+      <div class="lbl">Alunos</div>
+    </button>
     <button class="nav-btn" id="nav-editar">
       <div class="icon-bg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
       <div class="lbl">Editar</div>
@@ -389,6 +429,7 @@
   const SYNC_KEY = "ficha_treino_sync_v1";
   let SYNC = {};
   let AUTH = null, MODE = "local";
+  let lastLib = "", LIB = [];
   let pushTimer = null;
   const GRIPS = ["—","Pronada","Supinada","Neutra"];
   const CATEGORIES = ["Costas","Peito","Ombros","Bíceps","Tríceps","Pernas","Core","Outros"];
@@ -577,6 +618,9 @@
   const stDur = document.getElementById("st-dur");
   const stSets = document.getElementById("st-sets");
   const stVol = document.getElementById("st-vol");
+  const tabAlunos = document.getElementById("tab-alunos");
+  const navAlunos = document.getElementById("nav-alunos");
+  const stuScreen = document.getElementById("stu-screen");
 
   const timerBar = document.getElementById("timer-bar");
   const timerTime = document.getElementById("timer-time");
@@ -887,7 +931,7 @@
       chip.onclick = () => { libFilter = cat; renderBiblioteca(); };
       libChips.appendChild(chip);
     });
-    const all = getAllExercisesFlat();
+    const all = (MODE === "student" && LIB.length) ? LIB.map(l => ({ name: l.name, category: l.category || "Outros", grip: l.grip || "—", focus: l.focus || "", exec: l.exec || "", img: l.img || "", video: l.video || "", sets: [], interval: "", tech: "" })) : getAllExercisesFlat();
     const filtered = libFilter === "Todos" ? all : all.filter(e => e.category === libFilter);
     libList.innerHTML = "";
     if (!filtered.length) {
@@ -1086,18 +1130,22 @@
     tabTreino.style.display = tab === "treino" ? "block" : "none";
     tabBiblioteca.style.display = tab === "biblioteca" ? "block" : "none";
     tabEditar.style.display = tab === "editar" ? "block" : "none";
+    tabAlunos.style.display = tab === "alunos" ? "block" : "none";
     treinoFooter.style.display = tab === "treino" ? "block" : "none";
     progressWrap.style.display = tab === "treino" ? "block" : "none";
     navTreino.classList.toggle("active", tab === "treino");
     navBiblioteca.classList.toggle("active", tab === "biblioteca");
     navEditar.classList.toggle("active", tab === "editar");
+    navAlunos.classList.toggle("active", tab === "alunos");
     if (tab === "treino") { screenTitle.textContent = "Meu Plano"; screenSub.textContent = STORE.plans[STORE.active].name; renderTreino(); }
     if (tab === "biblioteca") { screenTitle.textContent = "Exercícios"; screenSub.textContent = CATALOG.length + " cadastrados"; renderBiblioteca(); }
-    if (tab === "editar") { screenTitle.textContent = "Editar Ficha"; screenSub.textContent = "Monte sua ficha"; renderEditar(); }
+    if (tab === "editar") { screenTitle.textContent = "Editar Ficha"; screenSub.textContent = "Monte sua ficha"; renderEditar(); updateBanner(); }
+    if (tab === "alunos") { screenTitle.textContent = "Alunos"; screenSub.textContent = "Fichas e acessos"; loadStudents(); }
   }
   navTreino.onclick = () => setActiveTab("treino");
   navBiblioteca.onclick = () => setActiveTab("biblioteca");
   navEditar.onclick = () => setActiveTab("editar");
+  navAlunos.onclick = () => setActiveTab("alunos");
 
   resetBtn.onclick = () => {
     Object.keys(PROGRESS).forEach(k => {
@@ -1200,7 +1248,15 @@
     if (!syncOn()) return;
     try {
       if (MODE === "student") { await api("/rest/v1/progress", { method: "POST", headers: { Prefer: "resolution=merge-duplicates" }, body: { student_id: AUTH.uid, data: PROGRESS, updated_at: new Date().toISOString() } }); return; }
-      if (MODE === "admin") await api("/rest/v1/admin_store", { method: "POST", headers: { Prefer: "resolution=merge-duplicates" }, body: { id: AUTH.uid, data: STORE, updated_at: new Date().toISOString() } });
+      if (MODE === "admin") {
+        await api("/rest/v1/admin_store", { method: "POST", headers: { Prefer: "resolution=merge-duplicates" }, body: { id: AUTH.uid, data: STORE, updated_at: new Date().toISOString() } });
+        const lp = libPayload(), ls = JSON.stringify(lp);
+        if (ls !== lastLib) {
+          const now = new Date().toISOString();
+          await api("/rest/v1/exercises", { method: "POST", headers: { Prefer: "resolution=merge-duplicates" }, body: lp.map(x => Object.assign({ updated_at: now }, x)) });
+          lastLib = ls; LIB = lp;
+        }
+      }
       else await rpc("ficha_set", { p_code: SYNC.code, p_data: STORE });
       setStatus("Salvo na nuvem · " + hora());
     }
@@ -1310,7 +1366,7 @@
     try {
       const a = await api("/rest/v1/assignments?student_id=eq." + AUTH.uid + "&select=plan_name,plan");
       const pr = await api("/rest/v1/progress?student_id=eq." + AUTH.uid + "&select=data");
-      const lib = await api("/rest/v1/exercises?select=name,category,grip,img,video");
+      const lib = await api("/rest/v1/exercises?select=*"); LIB = lib || [];
       const data = normalizeData(a && a[0] ? a[0].plan : emptyPlan());
       const byName = {}; (lib || []).forEach(l => { byName[l.name] = l; });
       Object.values(data).forEach(dd => dd.exercises.forEach(e => {
@@ -1323,33 +1379,127 @@
       setActiveTab(activeTab);
     } catch (e) { screenSub.textContent = "Sem conexão — tente de novo"; }
   }
+  function libPayload() {
+    const prev = {}; LIB.forEach(l => { prev[l.name] = l; });
+    const map = {};
+    Object.values(STORE.plans).forEach(pl => Object.values(pl.data).forEach(dd => dd.exercises.forEach(e => {
+      const pv = map[e.name] || prev[e.name] || {};
+      map[e.name] = { name: e.name, category: e.category, grip: e.grip, focus: e.focus, exec: e.exec, img: e.img || pv.img || "", video: e.video || pv.video || "" };
+    })));
+    return Object.values(map);
+  }
+  function mk(tag, cls, text) { const el = document.createElement(tag); if (cls) el.className = cls; if (text !== undefined) el.textContent = text; return el; }
+  let STUDENTS = [];
   async function loadStudents() {
     const box = document.getElementById("student-list"); box.textContent = "Carregando…";
     try {
       const rows = await api("/rest/v1/profiles?role=eq.student&select=id,name,whatsapp&order=name");
-      box.innerHTML = rows.length ? "" : "Nenhum aluno ainda.";
-      rows.forEach(st => {
-        const row = document.createElement("div"); row.className = "stu-row";
-        const nm = document.createElement("div"); nm.className = "stu-name"; nm.textContent = (st.name || "Aluno") + (st.whatsapp ? " · " + st.whatsapp : ""); row.appendChild(nm);
-        const b1 = document.createElement("button"); b1.textContent = "Atribuir ficha ativa"; b1.onclick = () => assignPlan(st);
-        const b2 = document.createElement("button"); b2.textContent = "Enviar link"; b2.onclick = () => inviteStudent(st.name, st.whatsapp);
-        row.appendChild(b1); row.appendChild(b2); box.appendChild(row);
+      const asg = await api("/rest/v1/assignments?select=student_id,plan_name");
+      const prg = await api("/rest/v1/progress?select=student_id,updated_at");
+      STUDENTS = rows.map(r => ({ id: r.id, name: r.name, whatsapp: r.whatsapp,
+        plan: ((asg || []).find(a => a.student_id === r.id) || {}).plan_name || "",
+        last: ((prg || []).find(x => x.student_id === r.id) || {}).updated_at || "" }));
+      box.innerHTML = "";
+      if (!STUDENTS.length) { box.appendChild(mk("div", "empty-note", "Nenhum aluno ainda. Cadastre o primeiro acima.")); return; }
+      STUDENTS.forEach(st => {
+        const card = mk("div", "stu-card");
+        card.appendChild(mk("div", "stu-av", (st.name || "?").charAt(0).toUpperCase()));
+        const info = mk("div", "stu-info");
+        info.appendChild(mk("div", "stu-name", st.name || "Aluno"));
+        info.appendChild(mk("div", "stu-sub", (st.plan ? "Ficha: " + st.plan : "Sem ficha") + (st.last ? " · treinou em " + new Date(st.last).toLocaleDateString("pt-BR") : "")));
+        card.appendChild(info); card.appendChild(mk("span", "chevron", "›"));
+        card.onclick = () => openStudent(st);
+        box.appendChild(card);
       });
     } catch (e) { box.textContent = "Não consegui carregar os alunos."; }
   }
-  async function assignPlan(st) {
-    const nm = STORE.plans[STORE.active].name;
-    if (!confirm('Passar a ficha "' + nm + '" para ' + (st.name || "o aluno") + "?")) return;
-    try { await api("/rest/v1/assignments", { method: "POST", headers: { Prefer: "resolution=merge-duplicates" }, body: { student_id: st.id, plan_name: nm, plan: DATA, updated_at: new Date().toISOString() } }); alert("Ficha enviada."); }
-    catch (e) { alert("Não consegui enviar a ficha."); }
+  function dayStats(plan, prog) {
+    return ORDER.map(code => {
+      const dd = plan[code]; let tot = 0, done = 0, vol = 0;
+      (dd ? dd.exercises : []).forEach((e, i) => e.sets.forEach((r, k) => {
+        tot++; const key = code + ":" + i + ":" + k;
+        if (prog["done:" + key]) { done++; vol += (parseFloat(String(prog["kg:" + key] || "").replace(",", ".")) || 0) * (parseInt(r, 10) || 0); }
+      }));
+      return { code: code, label: dd ? dd.label : "", tot: tot, done: done, vol: Math.round(vol) };
+    });
   }
-  async function inviteStudent(name, whatsapp) {
+  async function openStudent(st) {
+    stuScreen.classList.add("show");
+    document.getElementById("stu-title").textContent = st.name || "Aluno";
+    const body = document.getElementById("stu-body"); body.textContent = "Carregando…";
+    let asg = null, prog = {};
+    try {
+      const a = await api("/rest/v1/assignments?student_id=eq." + st.id + "&select=plan_name,plan"); asg = a && a[0] ? a[0] : null;
+      const pr = await api("/rest/v1/progress?student_id=eq." + st.id + "&select=data"); prog = (pr && pr[0] && pr[0].data) || {};
+    } catch (e) {}
+    body.innerHTML = "";
+    body.appendChild(mk("div", "stu-sec", "ACESSO"));
+    const acc = mk("div", "stu-actions");
+    const bLink = mk("button", "primary", "💬 Enviar link no WhatsApp"); bLink.onclick = () => inviteStudent(st.name, st.whatsapp);
+    acc.appendChild(mk("div", "stu-sub", "WhatsApp: " + (st.whatsapp || "—") + " · cada link vale uma vez; reenvie se ele trocar de celular.")); acc.appendChild(bLink);
+    body.appendChild(acc);
+
+    body.appendChild(mk("div", "stu-sec", "FICHA DO ALUNO"));
+    body.appendChild(mk("div", "stu-sub", asg ? "Atual: " + (asg.plan_name || "sem nome") : "Nenhuma ficha atribuída ainda."));
+    const act = mk("div", "stu-actions"); act.style.marginTop = "8px";
+    const sel = document.createElement("select");
+    Object.keys(STORE.plans).forEach(id => { const o = document.createElement("option"); o.value = id; o.textContent = STORE.plans[id].name; sel.appendChild(o); });
+    sel.value = STORE.active;
+    const bAsg = mk("button", "primary", "Atribuir esta ficha");
+    bAsg.onclick = async () => {
+      const pl = STORE.plans[sel.value];
+      if (!confirm('Passar "' + pl.name + '" para ' + (st.name || "o aluno") + "?")) return;
+      try { await api("/rest/v1/assignments", { method: "POST", headers: { Prefer: "resolution=merge-duplicates" }, body: { student_id: st.id, plan_name: pl.name, plan: pl.data, updated_at: new Date().toISOString() } }); st.plan = pl.name; openStudent(st); loadStudents(); }
+      catch (e) { alert("Não consegui atribuir a ficha."); }
+    };
+    act.appendChild(sel); act.appendChild(bAsg);
+    if (asg) {
+      const bEdit = mk("button", "", "✎ Editar ficha deste aluno");
+      bEdit.onclick = () => {
+        const copy = normalizeData(JSON.parse(JSON.stringify(asg.plan)));
+        let id = Object.keys(STORE.plans).find(k => STORE.plans[k].studentId === st.id);
+        if (id) STORE.plans[id].data = copy;
+        else { id = newId(); STORE.plans[id] = { name: "Aluno: " + (st.name || ""), data: copy, progress: {}, studentId: st.id, studentName: st.name || "" }; }
+        CATALOG = loadCatalog(); stuScreen.classList.remove("show"); switchPlan(id); setActiveTab("editar");
+      };
+      const bDel = mk("button", "", "Remover ficha");
+      bDel.onclick = async () => {
+        if (!confirm("Remover a ficha de " + (st.name || "aluno") + "? O progresso dele é mantido.")) return;
+        try { await api("/rest/v1/assignments?student_id=eq." + st.id, { method: "DELETE" }); st.plan = ""; openStudent(st); loadStudents(); } catch (e) { alert("Não consegui remover."); }
+      };
+      act.appendChild(bEdit); act.appendChild(bDel);
+    }
+    body.appendChild(act);
+
+    if (asg) {
+      body.appendChild(mk("div", "stu-sec", "PROGRESSO POR TREINO"));
+      dayStats(asg.plan, prog).forEach(x => {
+        const row = mk("div", "day-stat");
+        row.appendChild(mk("span", "", x.code + " — " + x.label));
+        row.appendChild(mk("span", "", x.done + "/" + x.tot + " séries · " + x.vol.toLocaleString("pt-BR") + " kg"));
+        body.appendChild(row);
+      });
+    }
+  }
+  document.getElementById("stu-back").onclick = () => stuScreen.classList.remove("show");
+  function updateBanner() {
+    const pl = STORE.plans[STORE.active], bn = document.getElementById("stu-banner");
+    if (MODE === "admin" && pl && pl.studentId) { bn.style.display = "block"; document.getElementById("stu-banner-text").textContent = "Você está editando a ficha de " + (pl.studentName || "aluno") + ". As mudanças só chegam a ele quando você salvar abaixo."; }
+    else bn.style.display = "none";
+  }
+  document.getElementById("stu-banner-save").onclick = async () => {
+    const pl = STORE.plans[STORE.active];
+    try { await api("/rest/v1/assignments", { method: "POST", headers: { Prefer: "resolution=merge-duplicates" }, body: { student_id: pl.studentId, plan_name: pl.name.replace(/^Aluno:\s*/, ""), plan: DATA, updated_at: new Date().toISOString() } }); alert("Ficha salva no aluno."); }
+    catch (e) { alert("Não consegui salvar a ficha no aluno."); }
+  };
+  async function inviteStudent(name, whatsapp, self) {
     try {
       const tok = await freshToken();
-      const r = await fetch(SB + "/functions/v1/invite-student", { method: "POST", headers: { apikey: DEFAULT_SUPA.key, Authorization: "Bearer " + tok, "Content-Type": "application/json" }, body: JSON.stringify({ name: name, whatsapp: whatsapp, app_url: location.origin + location.pathname }) });
+      const r = await fetch(SB + "/functions/v1/invite-student", { method: "POST", headers: { apikey: DEFAULT_SUPA.key, Authorization: "Bearer " + tok, "Content-Type": "application/json" }, body: JSON.stringify({ name: name, whatsapp: whatsapp, self: !!self, app_url: location.origin + location.pathname }) });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || r.status);
-      const msg = "Oi" + (name ? " " + name : "") + "! Esse é o seu acesso à ficha de treino: " + j.link + "\n(abra neste celular; o link vale uma vez só)";
+      const msg = self ? "Seu acesso de treinador à ficha de treino: " + j.link + "\n(abra no aparelho onde quer entrar; o link vale uma vez só)"
+        : "Oi" + (name ? " " + name : "") + "! Esse é o seu acesso à ficha de treino: " + j.link + "\n(abra neste celular; o link vale uma vez só)";
       window.open("https://wa.me/" + j.phone + "?text=" + encodeURIComponent(msg), "_blank");
       loadStudents();
     } catch (e) { alert("Não consegui gerar o link: " + e.message); }
@@ -1357,16 +1507,12 @@
   document.getElementById("stu-add").onclick = () => {
     const nm = document.getElementById("stu-name").value.trim(), w = document.getElementById("stu-wpp").value.trim();
     if (!nm || !w) { alert("Informe o nome e o WhatsApp do aluno."); return; }
-    inviteStudent(nm, w);
+    inviteStudent(nm, w); document.getElementById("stu-name").value = ""; document.getElementById("stu-wpp").value = "";
   };
-  document.getElementById("lib-publish").onclick = async () => {
-    const map = {};
-    Object.values(STORE.plans).forEach(pl => Object.values(pl.data).forEach(dd => dd.exercises.forEach(e => {
-      const pv = map[e.name] || {};
-      map[e.name] = { name: e.name, category: e.category, grip: e.grip, focus: e.focus, exec: e.exec, img: e.img || pv.img || "", video: e.video || pv.video || "", updated_at: new Date().toISOString() };
-    })));
-    try { await api("/rest/v1/exercises", { method: "POST", headers: { Prefer: "resolution=merge-duplicates" }, body: Object.values(map) }); alert(Object.keys(map).length + " exercícios publicados na biblioteca."); }
-    catch (e) { alert("Não consegui publicar a biblioteca."); }
+  document.getElementById("adm-link").onclick = () => {
+    const w = document.getElementById("adm-wpp").value.trim();
+    if (!w) { alert("Digite o seu WhatsApp."); return; }
+    inviteStudent("", w, true);
   };
   document.getElementById("login-email-btn").onclick = async () => {
     const em = document.getElementById("login-email").value.trim();
@@ -1377,6 +1523,7 @@
     } catch (e) { loginMsg("Sem conexão. Tente de novo."); }
   };
   document.getElementById("login-local").onclick = () => { try { localStorage.setItem(MODE_KEY, "local"); } catch (e) {} loginScreen.classList.remove("show"); };
+  document.getElementById("logout-btn2").onclick = () => logoutBtn.onclick();
   logoutBtn.onclick = () => { try { localStorage.removeItem(AUTH_KEY); localStorage.removeItem(MODE_KEY); } catch (e) {} location.reload(); };
 
   async function boot() {
@@ -1395,7 +1542,8 @@
     document.body.classList.add("mode-" + MODE);
     logoutBtn.style.display = "block";
     if (MODE === "student") { activeTab = "treino"; await studentLoad(); }
-    else { document.getElementById("admin-box").style.display = "block"; await pull(); loadStudents(); }
+    else { await pull(); try { const l = await api("/rest/v1/exercises?select=*"); LIB = l || []; } catch (e) {} }
+    const hdr = document.querySelector(".header"); const bd = mk("span", "role-badge", MODE === "admin" ? "TREINADOR" : "ALUNO"); hdr.appendChild(bd);
   }
 
   setActiveTab("treino");
