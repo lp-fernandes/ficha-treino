@@ -233,6 +233,18 @@
   .star { position:absolute; top:8px; right:8px; width:28px; height:28px; border-radius:50%; border:none; background:#e6e6e6; color:#fff; font-size:14px; }
   .star.on { background:var(--gold); }
   .lib-empty { grid-column:1 / -1; }
+  .login-screen { position:fixed; inset:0; z-index:120; display:none; align-items:center; justify-content:center; padding:20px; background:linear-gradient(180deg,#0c2d34,#07181c 60%); }
+  .login-screen.show { display:flex; }
+  .login-card { width:100%; max-width:380px; text-align:center; }
+  .login-card h2 { margin:6px 0 10px; font-size:22px; }
+  .login-card p { color:var(--text-dim); font-size:13px; line-height:1.5; margin:0 0 18px; }
+  .login-card input { width:100%; padding:12px; border-radius:12px; border:1px solid var(--line); background:var(--bg-input); color:var(--text); font-size:14px; }
+  .login-card a { display:block; margin-top:16px; color:var(--text-dim2); font-size:12px; cursor:pointer; text-decoration:underline; }
+  .stu-row { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:8px 0; border-top:1px solid var(--line); }
+  .stu-name { flex:1 1 100%; font-size:13px; font-weight:700; }
+  .stu-row button { padding:7px 10px; border-radius:9px; border:1px solid var(--line); background:var(--bg-card2); color:var(--text); font-size:11px; font-weight:700; }
+  body.mode-student #nav-editar, body.mode-student #plan-bar, body.mode-student #goto-edit,
+  body.mode-student .legacy-sync, body.mode-admin .legacy-sync { display:none !important; }
 </style>
 </head>
 <body>
@@ -278,7 +290,16 @@
         <input type="file" id="import-input" accept="application/json" />
         <button class="danger-btn" id="restore-btn">⟲ Restaurar padrão</button>
       </div>
-      <div class="sync-box">
+      <div class="sync-box" id="admin-box" style="display:none;">
+        <h3>👥 Alunos e biblioteca</h3>
+        <div class="toolbar"><button id="lib-publish">⬆ Publicar biblioteca</button></div>
+        <input id="stu-name" placeholder="Nome do aluno" autocomplete="off" />
+        <input id="stu-wpp" placeholder="WhatsApp com DDD (ex: 44999998888)" inputmode="tel" autocomplete="off" />
+        <div class="toolbar"><button id="stu-add">＋ Criar aluno e enviar link</button></div>
+        <div id="student-list"></div>
+        <div class="st" id="admin-status">Conectado como treinador.</div>
+      </div>
+      <div class="sync-box legacy-sync">
         <h3>☁ Sincronização entre aparelhos</h3>
         <input id="sync-url" placeholder="URL do projeto Supabase (https://xxxx.supabase.co)" autocomplete="off" />
         <input id="sync-key" placeholder="Chave anon (public)" autocomplete="off" />
@@ -291,8 +312,20 @@
   </div>
 
   <div id="treino-footer">
+    <button id="logout-btn" style="display:none;width:100%;margin-top:2px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--bg-card);color:var(--text-dim);font-size:12px;font-weight:700;">Sair da conta</button>
     <button id="reset-btn" style="width:100%;margin-top:2px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--bg-card);color:var(--text-dim);font-size:12px;font-weight:700;">Reiniciar marcações do dia</button>
     <div class="install-tip"><strong>Dica:</strong> toque em Compartilhar (iPhone) ou no menu ⋮ (Android) e escolha "Adicionar à Tela de Início".</div>
+  </div>
+</div>
+
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <div style="font-size:42px;">🏋</div>
+    <h2>Ficha de Treino</h2>
+    <p id="login-msg">Abra o link de acesso que seu treinador enviou pelo WhatsApp.</p>
+    <input id="login-email" type="email" placeholder="Sou o treinador: meu e-mail" autocomplete="email" />
+    <button class="start-btn" id="login-email-btn" style="margin-top:10px;">Receber link por e-mail</button>
+    <a id="login-local">Usar só neste aparelho, sem login</a>
   </div>
 </div>
 
@@ -355,6 +388,7 @@
   const STORE_KEY = "ficha_treino_store_v6";
   const SYNC_KEY = "ficha_treino_sync_v1";
   let SYNC = {};
+  let AUTH = null, MODE = "local";
   let pushTimer = null;
   const GRIPS = ["—","Pronada","Supinada","Neutra"];
   const CATEGORIES = ["Costas","Peito","Ombros","Bíceps","Tríceps","Pernas","Core","Outros"];
@@ -478,7 +512,7 @@
   }
   function persist() {
     STORE.updated = Date.now();
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(STORE)); } catch (e) {}
+    if (MODE !== "student") { try { localStorage.setItem(STORE_KEY, JSON.stringify(STORE)); } catch (e) {} }
     schedulePush();
   }
   function saveData(d) { STORE.plans[STORE.active].data = d; persist(); }
@@ -758,6 +792,7 @@
       row.onclick = () => openDetail(exItem, "treino");
       homeList.appendChild(row);
     });
+    if (MODE === "student" && !d.exercises.length) homeList.innerHTML = '<div style="padding:18px 2px;color:var(--text-dim);font-size:13px;">Seu treinador ainda não passou uma ficha para você.</div>';
   }
   let sessionStart = 0, sessionTick = null;
   function openSession() {
@@ -1150,8 +1185,8 @@
   const syncKey = document.getElementById("sync-key");
   const syncCode = document.getElementById("sync-code");
   function hora() { return new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); }
-  function setStatus(t) { document.getElementById("sync-status").textContent = t; }
-  function syncOn() { return !!(SYNC.url && SYNC.key && SYNC.code); }
+  function setStatus(t) { document.getElementById("sync-status").textContent = t; const a = document.getElementById("admin-status"); if (a) a.textContent = t; }
+  function syncOn() { return MODE !== "local" || !!(SYNC.url && SYNC.key && SYNC.code); }
   async function rpc(fn, body) {
     const base = SYNC.url.replace(/\/+$/, "").replace(/\/rest\/v1$/, "");
     const headers = { "apikey": SYNC.key, "Content-Type": "application/json" };
@@ -1163,7 +1198,12 @@
   }
   async function push() {
     if (!syncOn()) return;
-    try { await rpc("ficha_set", { p_code: SYNC.code, p_data: STORE }); setStatus("Salvo na nuvem · " + hora()); }
+    try {
+      if (MODE === "student") { await api("/rest/v1/progress", { method: "POST", headers: { Prefer: "resolution=merge-duplicates" }, body: { student_id: AUTH.uid, data: PROGRESS, updated_at: new Date().toISOString() } }); return; }
+      if (MODE === "admin") await api("/rest/v1/admin_store", { method: "POST", headers: { Prefer: "resolution=merge-duplicates" }, body: { id: AUTH.uid, data: STORE, updated_at: new Date().toISOString() } });
+      else await rpc("ficha_set", { p_code: SYNC.code, p_data: STORE });
+      setStatus("Salvo na nuvem · " + hora());
+    }
     catch (e) { setStatus("Sem conexão com a nuvem — salvo só neste aparelho por enquanto."); }
   }
   function schedulePush() {
@@ -1182,9 +1222,12 @@
   }
   async function pull() {
     if (!syncOn()) return;
+    if (MODE === "student") { await push(); await studentLoad(); return; }
     try {
       setStatus("Sincronizando…");
-      const remote = await rpc("ficha_get", { p_code: SYNC.code });
+      let remote;
+      if (MODE === "admin") { const rows = await api("/rest/v1/admin_store?id=eq." + AUTH.uid + "&select=data"); remote = rows && rows[0] ? rows[0].data : null; }
+      else remote = await rpc("ficha_get", { p_code: SYNC.code });
       const ru = remote && remote.plans ? (remote.updated || 0) : -1;
       if (ru > (STORE.updated || 0)) { applyRemote(remote); setStatus("Atualizado da nuvem · " + hora()); }
       else if (ru < (STORE.updated || 0)) { await push(); }
@@ -1215,8 +1258,148 @@
   };
   document.addEventListener("visibilitychange", () => { if (!document.hidden) pull(); });
 
+  // ---- login por papéis (Supabase Auth) ----
+  const AUTH_KEY = "ficha_auth_v1", MODE_KEY = "ficha_mode_v1";
+  const SB = DEFAULT_SUPA.url.replace(/\/+$/, "");
+  const loginScreen = document.getElementById("login-screen");
+  const logoutBtn = document.getElementById("logout-btn");
+  function loginMsg(t) { document.getElementById("login-msg").textContent = t; loginScreen.classList.add("show"); }
+  function jwtSub(t) { try { return JSON.parse(atob(t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).sub; } catch (e) { return ""; } }
+  function saveAuth(j) {
+    AUTH = { access: j.access_token, refresh: j.refresh_token, exp: Date.now() + ((j.expires_in || 3600) - 60) * 1000, uid: (j.user && j.user.id) || jwtSub(j.access_token) };
+    try { localStorage.setItem(AUTH_KEY, JSON.stringify(AUTH)); } catch (e) {}
+  }
+  async function freshToken() {
+    if (!AUTH) throw new Error("sem sessão");
+    if (Date.now() < AUTH.exp) return AUTH.access;
+    const r = await fetch(SB + "/auth/v1/token?grant_type=refresh_token", { method: "POST", headers: { apikey: DEFAULT_SUPA.key, "Content-Type": "application/json" }, body: JSON.stringify({ refresh_token: AUTH.refresh }) });
+    if (!r.ok) { AUTH = null; try { localStorage.removeItem(AUTH_KEY); } catch (e) {} throw new Error("sessão expirada"); }
+    saveAuth(await r.json()); return AUTH.access;
+  }
+  async function api(path, opts) {
+    opts = opts || {};
+    const tok = await freshToken();
+    const r = await fetch(SB + path, {
+      method: opts.method || "GET",
+      headers: Object.assign({ apikey: DEFAULT_SUPA.key, Authorization: "Bearer " + tok, "Content-Type": "application/json" }, opts.headers || {}),
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const t = await r.text(); return t ? JSON.parse(t) : null;
+  }
+  async function consumeLoginLink() {
+    const h = location.hash || "";
+    const tm = h.match(/[#&]t=([^&]+)/);
+    const am = h.match(/[#&]access_token=([^&]+)/);
+    if (!tm && !am) return;
+    history.replaceState(null, "", location.pathname + location.search);
+    if (tm) {
+      try {
+        const r = await fetch(SB + "/auth/v1/verify", { method: "POST", headers: { apikey: DEFAULT_SUPA.key, "Content-Type": "application/json" }, body: JSON.stringify({ type: "magiclink", token_hash: decodeURIComponent(tm[1]) }) });
+        const j = await r.json();
+        if (j.access_token) { saveAuth(j); return; }
+      } catch (e) {}
+      loginMsg("Link inválido, expirado ou já usado. Peça um novo ao seu treinador.");
+    } else {
+      const g = k => decodeURIComponent((h.match(new RegExp("[#&]" + k + "=([^&]+)")) || [, ""])[1]);
+      saveAuth({ access_token: g("access_token"), refresh_token: g("refresh_token"), expires_in: parseInt(g("expires_in") || "3600", 10) });
+    }
+  }
+  function emptyPlan() { const d = defaultData(); Object.keys(d).forEach(c => { d[c].exercises = []; }); return d; }
+  async function studentLoad() {
+    try {
+      const a = await api("/rest/v1/assignments?student_id=eq." + AUTH.uid + "&select=plan_name,plan");
+      const pr = await api("/rest/v1/progress?student_id=eq." + AUTH.uid + "&select=data");
+      const lib = await api("/rest/v1/exercises?select=name,category,grip,img,video");
+      const data = normalizeData(a && a[0] ? a[0].plan : emptyPlan());
+      const byName = {}; (lib || []).forEach(l => { byName[l.name] = l; });
+      Object.values(data).forEach(dd => dd.exercises.forEach(e => {
+        const l = byName[e.name]; if (!l) return;
+        ["category", "grip", "img", "video"].forEach(k => { if (l[k]) e[k] = l[k]; });
+      }));
+      const prog = (pr && pr[0] && pr[0].data) || {};
+      STORE = { v: 6, active: "aluno", plans: { aluno: { name: (a && a[0] && a[0].plan_name) || "Minha ficha", data: data, progress: prog } }, catalog: [], updated: 0 };
+      DATA = data; PROGRESS = prog; CATALOG = [];
+      setActiveTab(activeTab);
+    } catch (e) { screenSub.textContent = "Sem conexão — tente de novo"; }
+  }
+  async function loadStudents() {
+    const box = document.getElementById("student-list"); box.textContent = "Carregando…";
+    try {
+      const rows = await api("/rest/v1/profiles?role=eq.student&select=id,name,whatsapp&order=name");
+      box.innerHTML = rows.length ? "" : "Nenhum aluno ainda.";
+      rows.forEach(st => {
+        const row = document.createElement("div"); row.className = "stu-row";
+        const nm = document.createElement("div"); nm.className = "stu-name"; nm.textContent = (st.name || "Aluno") + (st.whatsapp ? " · " + st.whatsapp : ""); row.appendChild(nm);
+        const b1 = document.createElement("button"); b1.textContent = "Atribuir ficha ativa"; b1.onclick = () => assignPlan(st);
+        const b2 = document.createElement("button"); b2.textContent = "Enviar link"; b2.onclick = () => inviteStudent(st.name, st.whatsapp);
+        row.appendChild(b1); row.appendChild(b2); box.appendChild(row);
+      });
+    } catch (e) { box.textContent = "Não consegui carregar os alunos."; }
+  }
+  async function assignPlan(st) {
+    const nm = STORE.plans[STORE.active].name;
+    if (!confirm('Passar a ficha "' + nm + '" para ' + (st.name || "o aluno") + "?")) return;
+    try { await api("/rest/v1/assignments", { method: "POST", headers: { Prefer: "resolution=merge-duplicates" }, body: { student_id: st.id, plan_name: nm, plan: DATA, updated_at: new Date().toISOString() } }); alert("Ficha enviada."); }
+    catch (e) { alert("Não consegui enviar a ficha."); }
+  }
+  async function inviteStudent(name, whatsapp) {
+    try {
+      const tok = await freshToken();
+      const r = await fetch(SB + "/functions/v1/invite-student", { method: "POST", headers: { apikey: DEFAULT_SUPA.key, Authorization: "Bearer " + tok, "Content-Type": "application/json" }, body: JSON.stringify({ name: name, whatsapp: whatsapp, app_url: location.origin + location.pathname }) });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || r.status);
+      const msg = "Oi" + (name ? " " + name : "") + "! Esse é o seu acesso à ficha de treino: " + j.link + "\n(abra neste celular; o link vale uma vez só)";
+      window.open("https://wa.me/" + j.phone + "?text=" + encodeURIComponent(msg), "_blank");
+      loadStudents();
+    } catch (e) { alert("Não consegui gerar o link: " + e.message); }
+  }
+  document.getElementById("stu-add").onclick = () => {
+    const nm = document.getElementById("stu-name").value.trim(), w = document.getElementById("stu-wpp").value.trim();
+    if (!nm || !w) { alert("Informe o nome e o WhatsApp do aluno."); return; }
+    inviteStudent(nm, w);
+  };
+  document.getElementById("lib-publish").onclick = async () => {
+    const map = {};
+    Object.values(STORE.plans).forEach(pl => Object.values(pl.data).forEach(dd => dd.exercises.forEach(e => {
+      const pv = map[e.name] || {};
+      map[e.name] = { name: e.name, category: e.category, grip: e.grip, focus: e.focus, exec: e.exec, img: e.img || pv.img || "", video: e.video || pv.video || "", updated_at: new Date().toISOString() };
+    })));
+    try { await api("/rest/v1/exercises", { method: "POST", headers: { Prefer: "resolution=merge-duplicates" }, body: Object.values(map) }); alert(Object.keys(map).length + " exercícios publicados na biblioteca."); }
+    catch (e) { alert("Não consegui publicar a biblioteca."); }
+  };
+  document.getElementById("login-email-btn").onclick = async () => {
+    const em = document.getElementById("login-email").value.trim();
+    if (!em) return;
+    try {
+      const r = await fetch(SB + "/auth/v1/otp?redirect_to=" + encodeURIComponent(location.origin + location.pathname), { method: "POST", headers: { apikey: DEFAULT_SUPA.key, "Content-Type": "application/json" }, body: JSON.stringify({ email: em, create_user: false }) });
+      loginMsg(r.ok ? "Link enviado! Abra o e-mail neste aparelho e toque no link." : "Não encontrei esse e-mail. A conta do treinador precisa existir no Supabase.");
+    } catch (e) { loginMsg("Sem conexão. Tente de novo."); }
+  };
+  document.getElementById("login-local").onclick = () => { try { localStorage.setItem(MODE_KEY, "local"); } catch (e) {} loginScreen.classList.remove("show"); };
+  logoutBtn.onclick = () => { try { localStorage.removeItem(AUTH_KEY); localStorage.removeItem(MODE_KEY); } catch (e) {} location.reload(); };
+
+  async function boot() {
+    await consumeLoginLink();
+    if (!AUTH) { try { AUTH = JSON.parse(localStorage.getItem(AUTH_KEY)); } catch (e) { AUTH = null; } }
+    if (!AUTH || !AUTH.refresh && !AUTH.access) {
+      AUTH = null;
+      if (localStorage.getItem(MODE_KEY) !== "local" && !loginScreen.classList.contains("show")) loginScreen.classList.add("show");
+      pull(); return;
+    }
+    try {
+      const prof = await api("/rest/v1/profiles?id=eq." + AUTH.uid + "&select=role,name");
+      MODE = prof && prof[0] && prof[0].role === "admin" ? "admin" : "student";
+    } catch (e) { MODE = "local"; AUTH = null; loginMsg("Não consegui entrar. Abra o link de acesso de novo ou peça um novo ao treinador."); return; }
+    loginScreen.classList.remove("show");
+    document.body.classList.add("mode-" + MODE);
+    logoutBtn.style.display = "block";
+    if (MODE === "student") { activeTab = "treino"; await studentLoad(); }
+    else { document.getElementById("admin-box").style.display = "block"; await pull(); loadStudents(); }
+  }
+
   setActiveTab("treino");
-  pull();
+  boot();
 })();
 </script>
 </body>
