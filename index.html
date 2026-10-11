@@ -260,6 +260,10 @@
   .day-stat span:last-child { color:var(--text-dim); text-align:right; }
   #nav-alunos { display:none; }
   body.mode-admin #nav-alunos { display:flex; }
+  .login-card select, .login-card textarea { width:100%; box-sizing:border-box; margin-bottom:8px; padding:11px 12px; border-radius:12px; border:1px solid var(--line); background:var(--bg-input); color:var(--text); font-size:13px; font-family:inherit; }
+  .login-card label { display:block; font-size:11px; color:var(--text-dim); margin:2px 2px 4px; }
+  .tpl-item { padding:12px; margin-bottom:8px; background:var(--bg-card); border:1px solid var(--line); border-radius:14px; cursor:pointer; }
+  .tpl-item b { font-size:14px; } .tpl-item div { font-size:11.5px; color:var(--text-dim); margin-top:4px; line-height:1.4; }
 </style>
 </head>
 <body>
@@ -302,6 +306,10 @@
         <button id="plan-dup">⧉ Duplicar</button>
         <button id="plan-ren">✎ Renomear</button>
         <button class="danger-btn" id="plan-del">🗑 Excluir</button>
+      </div>
+      <div class="toolbar">
+        <button id="tpl-btn">📚 Fichas prontas</button>
+        <button id="ai-btn" style="display:none;">✨ Gerar com IA</button>
       </div>
       <div class="toolbar">
         <button id="export-btn">⤓ Exportar ficha</button>
@@ -361,6 +369,32 @@
     <button id="logout-btn" style="display:none;width:100%;margin-top:2px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--bg-card);color:var(--text-dim);font-size:12px;font-weight:700;">Sair da conta</button>
     <button id="reset-btn" style="width:100%;margin-top:2px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--bg-card);color:var(--text-dim);font-size:12px;font-weight:700;">Reiniciar marcações do dia</button>
     <div class="install-tip"><strong>Dica:</strong> toque em Compartilhar (iPhone) ou no menu ⋮ (Android) e escolha "Adicionar à Tela de Início".</div>
+  </div>
+</div>
+
+<div class="login-screen" id="tpl-modal" style="z-index:130;">
+  <div class="login-card" style="text-align:left;max-height:92vh;overflow:auto;">
+    <h2 style="text-align:center;">📚 Fichas prontas</h2>
+    <p style="text-align:center;">Escolha um modelo. Ele vira uma nova ficha que você pode editar e passar ao aluno.</p>
+    <div id="tpl-list"></div>
+    <a id="tpl-close" style="text-align:center;">Fechar</a>
+  </div>
+</div>
+
+<div class="login-screen" id="ai-modal" style="z-index:130;">
+  <div class="login-card" style="text-align:left;max-height:92vh;overflow:auto;">
+    <h2 style="text-align:center;">✨ Gerar ficha com IA</h2>
+    <p style="text-align:center;">A IA monta um rascunho com a sua biblioteca. Revise tudo antes de passar ao aluno.</p>
+    <label>Objetivo</label><select id="ai-goal"><option>hipertrofia</option><option>emagrecimento</option><option>força</option><option>condicionamento geral</option></select>
+    <label>Nível</label><select id="ai-level"><option>iniciante</option><option>intermediário</option><option>avançado</option></select>
+    <label>Dias por semana</label><select id="ai-days"><option>2</option><option selected>3</option><option>4</option><option>5</option></select>
+    <label>Duração do treino</label><select id="ai-time"><option value="45">45 min</option><option value="60" selected>60 min</option><option value="90">90 min</option></select>
+    <label>Equipamento</label><select id="ai-equip"><option>academia completa</option><option>só halteres e banco</option><option>em casa, sem equipamentos</option></select>
+    <label>Limitações ou lesões</label><input id="ai-limits" placeholder="ex.: desconforto no ombro direito" />
+    <label>Observações e preferências</label><textarea id="ai-notes" rows="3" placeholder="ex.: quer foco em glúteo e costas"></textarea>
+    <button class="start-btn" id="ai-run" style="margin-top:6px;">Gerar ficha</button>
+    <div class="st" id="ai-status" style="text-align:center;margin-top:8px;"></div>
+    <a id="ai-close" style="text-align:center;">Cancelar</a>
   </div>
 </div>
 
@@ -874,7 +908,7 @@
       row.onclick = () => openDetail(exItem, "treino");
       homeList.appendChild(row);
     });
-    if (MODE === "student" && !d.exercises.length) homeList.innerHTML = '<div style="padding:18px 2px;color:var(--text-dim);font-size:13px;">Seu treinador ainda não passou uma ficha para você.</div>';
+    if (MODE === "student" && !d.exercises.length) homeList.innerHTML = '<div style="padding:18px 2px;color:var(--text-dim);font-size:13px;">' + (d.label === "Descanso" ? "Dia de descanso. Aproveite para se recuperar." : "Seu treinador ainda não passou uma ficha para você.") + "</div>";
   }
   let sessionStart = 0, sessionTick = null;
   function openSession() {
@@ -1574,6 +1608,7 @@
       catch (e) { alert("Não consegui atribuir a ficha."); }
     };
     act.appendChild(sel); act.appendChild(bAsg);
+    const bAI = mk("button", "", "✨ Gerar ficha com IA"); bAI.onclick = () => openAI({ id: st.id, name: st.name || "" }); act.appendChild(bAI);
     if (asg) {
       const bEdit = mk("button", "", "✎ Editar ficha deste aluno");
       bEdit.onclick = () => {
@@ -1604,9 +1639,14 @@
   }
   document.getElementById("stu-back").onclick = () => stuScreen.classList.remove("show");
   function updateBanner() {
-    const pl = STORE.plans[STORE.active], bn = document.getElementById("stu-banner");
-    if (MODE === "admin" && pl && pl.studentId) { bn.style.display = "block"; document.getElementById("stu-banner-text").textContent = "Você está editando a ficha de " + (pl.studentName || "aluno") + ". As mudanças só chegam a ele quando você salvar abaixo."; }
-    else bn.style.display = "none";
+    const pl = STORE.plans[STORE.active], bn = document.getElementById("stu-banner"), sv = document.getElementById("stu-banner-save"), tx = document.getElementById("stu-banner-text");
+    if (MODE === "admin" && pl && pl.studentId) {
+      bn.style.display = "block"; sv.style.display = "block";
+      tx.textContent = "Você está editando a ficha de " + (pl.studentName || "aluno") + "." + (pl.aiDraft ? " Rascunho gerado por IA: revise tudo antes de salvar." : "") + " As mudanças só chegam a ele quando você salvar abaixo.";
+    } else if (pl && pl.aiDraft) {
+      bn.style.display = "block"; sv.style.display = "none";
+      tx.textContent = "✨ Rascunho gerado por IA. Revise exercícios, séries e intervalos antes de passar ao aluno: a responsabilidade pela ficha é do treinador.";
+    } else bn.style.display = "none";
   }
   document.getElementById("stu-banner-save").onclick = async () => {
     const pl = STORE.plans[STORE.active];
@@ -1678,6 +1718,7 @@
     else { await pull(); try { const l = await api("/rest/v1/exercises?select=*"); LIB = l || []; } catch (e) {} }
     const hdr = document.querySelector(".header"); const bd = mk("span", "role-badge", ROLE === "owner" ? "ADMIN" : ROLE === "trainer" ? "TREINADOR" : "ALUNO"); hdr.appendChild(bd);
     const pb = mk("button", "", "Alterar minha senha"); pb.style.cssText = logoutBtn.style.cssText; pb.style.display = "block"; pb.onclick = changePass; logoutBtn.parentNode.insertBefore(pb, logoutBtn);
+    if (MODE === "admin") document.getElementById("ai-btn").style.display = "";
     document.getElementById("trainers-box").style.display = ROLE === "owner" ? "block" : "none"; if (ROLE === "owner") { loadTrainers(); loadStaff(); }
     if (MODE === "admin") {
       document.getElementById("company-box").style.display = "block";
@@ -1685,6 +1726,97 @@
       document.getElementById("company-code").textContent = "Código da academia: " + COMPANY.slug + "\nLink dos alunos: " + appLink();
     }
   }
+
+
+  // ---- fichas prontas e IA ----
+  function tplPlan(days) {
+    const data = emptyPlan();
+    ORDER.forEach((code, i) => {
+      const dd = days[i];
+      if (!dd) { data[code].label = "Descanso"; return; }
+      data[code].label = dd[0];
+      data[code].exercises = dd.slice(1).map(row => {
+        const p = row.split("|"), m = p[2].match(/^(\d+)x(.+)$/), low = parseInt(m[2], 10);
+        return ex(p[0], "", Array(+m[1]).fill(m[2].replace("-", "–")), low <= 8 ? "2 min" : low <= 12 ? "90s" : "60s", "", "", "—", "", "", p[1]);
+      });
+    });
+    return data;
+  }
+  const TEMPLATES = [
+    { name: "Iniciante — Corpo todo 3x", desc: "3 dias por semana, máquinas e movimentos simples. Ideal para as primeiras semanas.", days: [
+      ["Treino A — Corpo todo", "Leg Press 45°|Pernas|3x10-12", "Supino Reto Máquina|Peito|3x10-12", "Puxada Alta Pronada Aberta|Costas|3x10-12", "Desenvolvimento Máquina|Ombros|2x10-12", "Rosca Martelo|Bíceps|2x12", "Tríceps Corda no Cabo|Tríceps|2x12", "Abdominal Máquina + Prancha|Core|3x12-15"],
+      ["Treino B — Corpo todo", "Hack Machine|Pernas|3x10-12", "Supino Inclinado Máquina|Peito|3x10-12", "Remada Máquina Guiada|Costas|3x10-12", "Elevação Lateral Máquina|Ombros|3x12-15", "Cadeira Flexora|Pernas|3x12", "Rosca Inclinada Halteres|Bíceps|2x12", "Panturrilha em Pé|Pernas|3x15"],
+      ["Treino C — Corpo todo", "Leg Press 45°|Pernas|3x10-12", "Cadeira Extensora|Pernas|2x12-15", "Supino Reto Máquina|Peito|3x10-12", "Remada Baixa Triângulo|Costas|3x10-12", "Elevação Lateral Máquina|Ombros|2x12-15", "Tríceps Máquina Articulada|Tríceps|2x12", "Abdominal Máquina + Prancha|Core|3x12-15"]] },
+    { name: "Empurrar / Puxar / Pernas 3x", desc: "3 dias: peito, ombros e tríceps; costas e bíceps; pernas e abdômen. Nível intermediário.", days: [
+      ["Empurrar — Peito, Ombros, Tríceps", "Supino Inclinado Máquina|Peito|4x8-12", "Supino Reto Máquina|Peito|3x8-12", "Crossover Cabo|Peito|3x12-15", "Desenvolvimento Máquina|Ombros|3x8-12", "Elevação Lateral Máquina|Ombros|4x12-15", "Tríceps Corda no Cabo|Tríceps|3x10-12", "Tríceps Francês Corda|Tríceps|3x10-12"],
+      ["Puxar — Costas e Bíceps", "Puxada Alta Pronada Aberta|Costas|4x8-12", "Remada Máquina Guiada|Costas|3x8-12", "Remada Baixa Triângulo|Costas|3x10-12", "Reverse Fly Máquina|Ombros|3x12-15", "Rosca Inclinada Halteres|Bíceps|3x10-12", "Rosca Martelo|Bíceps|3x10-12"],
+      ["Pernas e Core", "Hack Machine|Pernas|4x8-12", "Leg Press 45°|Pernas|3x10-12", "Cadeira Extensora|Pernas|3x12-15", "Stiff-leg com Halteres|Pernas|3x8-12", "Cadeira Flexora|Pernas|3x10-12", "Panturrilha em Pé|Pernas|4x12-15", "Abdominal Máquina + Prancha|Core|3x12-15"]] },
+    { name: "Superior / Inferior 4x", desc: "4 dias alternando parte superior e inferior, cada grupo 2x por semana. Nível intermediário.", days: [
+      ["Superior A", "Supino Inclinado Máquina|Peito|4x8-10", "Puxada Alta Pronada Aberta|Costas|4x8-10", "Desenvolvimento Máquina|Ombros|3x8-12", "Remada Baixa Triângulo|Costas|3x10-12", "Tríceps Corda no Cabo|Tríceps|3x10-12", "Rosca Inclinada Halteres|Bíceps|3x10-12"],
+      ["Inferior A", "Hack Machine|Pernas|4x8-12", "Stiff-leg com Halteres|Pernas|3x8-12", "Cadeira Extensora|Pernas|3x12-15", "Cadeira Flexora|Pernas|3x10-12", "Panturrilha em Pé|Pernas|4x12-15", "Abdominal Máquina + Prancha|Core|3x12-15"],
+      ["Superior B", "Supino Reto Máquina|Peito|4x8-10", "Puxada Alta Supinada|Costas|4x8-10", "Elevação Lateral Máquina|Ombros|4x12-15", "Remada Máquina Guiada|Costas|3x10-12", "Tríceps Francês Corda|Tríceps|3x10-12", "Rosca Martelo|Bíceps|3x10-12"],
+      ["Inferior B", "Leg Press 45°|Pernas|4x10-12", "Elevação Pélvica (máquina/Smith)|Pernas|3x10-12", "Cadeira Flexora|Pernas|3x10-12", "Cadeira Extensora|Pernas|3x12-15", "Panturrilha Sentada|Pernas|4x12-15", "Abdominal Máquina + Prancha|Core|3x12-15"]] },
+    { name: "ABCD — Grupos musculares 4x", desc: "4 dias: peito e tríceps; costas e bíceps; pernas; ombros e abdômen.", days: [
+      ["A — Peito e Tríceps", "Supino Inclinado Máquina|Peito|4x8-12", "Supino Reto Máquina|Peito|3x8-12", "Fly Máquina|Peito|3x12-15", "Crossover Cabo|Peito|3x12-15", "Tríceps Máquina Articulada|Tríceps|3x10-12", "Tríceps Corda no Cabo|Tríceps|3x10-12"],
+      ["B — Costas e Bíceps", "Puxada Alta Pronada Aberta|Costas|4x8-12", "Remada Máquina Guiada|Costas|3x8-12", "Remada Baixa Triângulo|Costas|3x10-12", "Pullover Cabo|Costas|3x10-12", "Rosca Inclinada Halteres|Bíceps|3x10-12", "Rosca Martelo|Bíceps|3x10-12"],
+      ["C — Pernas", "Hack Machine|Pernas|4x8-12", "Leg Press 45°|Pernas|3x10-12", "Cadeira Extensora|Pernas|3x12-15", "Stiff-leg com Halteres|Pernas|3x8-12", "Cadeira Flexora|Pernas|3x10-12", "Panturrilha em Pé|Pernas|4x12-15"],
+      ["D — Ombros e Abdômen", "Desenvolvimento Máquina|Ombros|4x8-12", "Elevação Lateral Máquina|Ombros|4x12-15", "Elevação Lateral Cabo|Ombros|3x12-15", "Reverse Fly Máquina|Ombros|3x12-15", "Abdominal Máquina + Prancha|Core|4x12-15"]] },
+    { name: "ABCDE — Hipertrofia clássica 5x", desc: "5 dias, um grupo por dia, volume alto. Para alunos avançados com boa recuperação.", days: [
+      ["A — Peito", "Supino Inclinado Máquina|Peito|4x6-10", "Supino Reto Máquina|Peito|4x8-10", "Fly Máquina|Peito|3x12-15", "Crossover Cabo|Peito|3x12-15"],
+      ["B — Costas", "Puxada Alta Pronada Aberta|Costas|4x8-12", "High Row Máquina|Costas|4x8-10", "Remada Baixa Triângulo|Costas|3x10-12", "Pullover Cabo|Costas|3x10-12", "Reverse Fly Máquina|Ombros|3x12-15"],
+      ["C — Pernas", "Hack Machine|Pernas|4x8-12", "Leg Press 45°|Pernas|4x10-12", "Cadeira Extensora|Pernas|3x12-15", "Cadeira Flexora|Pernas|4x10-12", "Stiff-leg com Halteres|Pernas|3x8-12", "Panturrilha em Pé|Pernas|4x12-15"],
+      ["D — Ombros e Abdômen", "Desenvolvimento Máquina|Ombros|4x8-12", "Elevação Lateral Máquina|Ombros|4x12-15", "Elevação Lateral Cabo|Ombros|3x12-15", "Abdominal Máquina + Prancha|Core|4x12-15"],
+      ["E — Braços", "Rosca Inclinada Halteres|Bíceps|4x8-12", "Rosca Scott Máquina|Bíceps|3x10-12", "Rosca Martelo|Bíceps|3x10-12", "Tríceps Francês Corda|Tríceps|4x8-12", "Tríceps Corda no Cabo|Tríceps|3x10-12", "Tríceps Máquina Articulada|Tríceps|3x10-12"]] },
+    { name: "Emagrecimento — Circuito 3x", desc: "3 dias de corpo todo com mais repetições e descanso curto. Combine com cardio.", days: [
+      ["Circuito A", "Leg Press 45°|Pernas|3x15-20", "Supino Reto Máquina|Peito|3x15", "Puxada Alta Pronada Aberta|Costas|3x15", "Desenvolvimento Máquina|Ombros|3x15", "Cadeira Flexora|Pernas|3x15", "Abdominal Máquina + Prancha|Core|3x15-20"],
+      ["Circuito B", "Hack Machine|Pernas|3x15", "Supino Inclinado Máquina|Peito|3x15", "Remada Máquina Guiada|Costas|3x15", "Elevação Lateral Máquina|Ombros|3x15-20", "Elevação Pélvica (máquina/Smith)|Pernas|3x15", "Abdominal Máquina + Prancha|Core|3x15-20"],
+      ["Circuito C", "Leg Press 45°|Pernas|3x15-20", "Remada Baixa Triângulo|Costas|3x15", "Supino Reto Máquina|Peito|3x15", "Tríceps Corda no Cabo|Tríceps|3x15", "Rosca Martelo|Bíceps|3x15", "Panturrilha em Pé|Pernas|3x20"]] },
+    { name: "Glúteos e Pernas 4x", desc: "4 dias com ênfase em glúteos e pernas, mais um treino de superiores leve. Nível intermediário.", days: [
+      ["Glúteo e Posterior", "Elevação Pélvica (máquina/Smith)|Pernas|4x8-12", "Stiff-leg com Halteres|Pernas|3x8-12", "Cadeira Flexora|Pernas|3x10-12", "Leg Press 45°|Pernas|3x10-12", "Panturrilha em Pé|Pernas|3x15"],
+      ["Superiores", "Puxada Alta Pronada Aberta|Costas|3x10-12", "Supino Inclinado Máquina|Peito|3x10-12", "Remada Baixa Triângulo|Costas|3x10-12", "Elevação Lateral Máquina|Ombros|3x12-15", "Tríceps Corda no Cabo|Tríceps|2x12", "Rosca Martelo|Bíceps|2x12"],
+      ["Quadríceps e Glúteo", "Hack Machine|Pernas|4x8-12", "Leg Press 45°|Pernas|3x10-12", "Cadeira Extensora|Pernas|3x12-15", "Elevação Pélvica (máquina/Smith)|Pernas|3x10-12", "Abdominal Máquina + Prancha|Core|3x12-15"],
+      ["Glúteo e Superiores", "Elevação Pélvica (máquina/Smith)|Pernas|4x10-12", "Cadeira Flexora|Pernas|3x10-12", "Remada Máquina Guiada|Costas|3x10-12", "Desenvolvimento Máquina|Ombros|3x10-12", "Panturrilha Sentada|Pernas|3x15"]] }
+  ];
+  const tplModal = document.getElementById("tpl-modal");
+  document.getElementById("tpl-btn").onclick = () => {
+    const box = document.getElementById("tpl-list"); box.innerHTML = "";
+    TEMPLATES.forEach(t => {
+      const it = mk("div", "tpl-item"); it.appendChild(mk("b", "", t.name)); it.appendChild(mk("div", "", t.desc + " · " + t.days.length + " dias"));
+      it.onclick = () => { tplModal.classList.remove("show"); addPlan(t.name, tplPlan(t.days)); setActiveTab("editar"); };
+      box.appendChild(it);
+    });
+    tplModal.classList.add("show");
+  };
+  document.getElementById("tpl-close").onclick = () => tplModal.classList.remove("show");
+
+  const aiModal = document.getElementById("ai-modal");
+  let aiCtx = null;
+  function openAI(ctx) { aiCtx = ctx || null; document.getElementById("ai-status").textContent = ""; aiModal.classList.add("show"); }
+  document.getElementById("ai-btn").onclick = () => openAI(null);
+  document.getElementById("ai-close").onclick = () => aiModal.classList.remove("show");
+  document.getElementById("ai-run").onclick = async () => {
+    const st = document.getElementById("ai-status"), btn = document.getElementById("ai-run");
+    btn.disabled = true; st.textContent = "Gerando a ficha… pode levar até 30 segundos.";
+    try {
+      const tok = await freshToken();
+      const r = await fetch(SB + "/functions/v1/generate-plan", { method: "POST", headers: { apikey: DEFAULT_SUPA.key, Authorization: "Bearer " + tok, "Content-Type": "application/json" }, body: JSON.stringify({ goal: val("ai-goal"), level: val("ai-level"), days: val("ai-days"), minutes: val("ai-time"), equipment: val("ai-equip"), limits: val("ai-limits"), notes: val("ai-notes") }) });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || r.status);
+      const data = emptyPlan();
+      ORDER.forEach((code, i) => {
+        const dd = j.plan.days[i];
+        if (!dd) { data[code].label = "Descanso"; return; }
+        data[code].label = dd.label;
+        data[code].exercises = dd.exercises.map(e => ex(e.name, "", e.sets, e.interval, e.tech, e.exec, e.grip, "", "", e.category));
+      });
+      aiModal.classList.remove("show");
+      addPlan("✨ " + j.plan.name, data);
+      const pl = STORE.plans[STORE.active]; pl.aiDraft = true;
+      if (aiCtx) { pl.studentId = aiCtx.id; pl.studentName = aiCtx.name; stuScreen.classList.remove("show"); }
+      persist(); setActiveTab("editar");
+    } catch (e) { st.textContent = "Não consegui gerar: " + e.message; }
+    btn.disabled = false;
+  };
 
   setActiveTab("treino");
   boot();
