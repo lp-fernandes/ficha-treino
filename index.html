@@ -264,6 +264,28 @@
   .login-card label { display:block; font-size:11px; color:var(--text-dim); margin:2px 2px 4px; }
   .tpl-item { padding:12px; margin-bottom:8px; background:var(--bg-card); border:1px solid var(--line); border-radius:14px; cursor:pointer; }
   .tpl-item b { font-size:14px; } .tpl-item div { font-size:11.5px; color:var(--text-dim); margin-top:4px; line-height:1.4; }
+  .picker { position:relative; }
+  .picker-box { position:absolute; left:0; right:0; top:100%; z-index:30; margin-top:4px; background:var(--bg-card2); border:1px solid var(--gold-dim); border-radius:12px; max-height:260px; overflow-y:auto; box-shadow:0 12px 30px rgba(0,0,0,.45); }
+  .picker-opt { padding:10px 12px; font-size:13px; border-bottom:1px solid var(--line); cursor:pointer; display:flex; justify-content:space-between; gap:8px; }
+  .picker-opt:last-child { border-bottom:none; } .picker-opt small { color:var(--text-dim2); font-size:10.5px; flex-shrink:0; }
+  .picker-opt.new { color:var(--gold); font-weight:700; }
+  #lib-search { width:100%; box-sizing:border-box; margin-bottom:10px; padding:12px 14px; border-radius:14px; border:1px solid var(--line); background:var(--bg-card); color:var(--text); font-size:14px; }
+  .pay-card { margin:0 0 4px; padding:12px 14px; border-radius:14px; border:1px solid var(--line); background:var(--bg-card); font-size:12.5px; line-height:1.5; }
+  .pay-card b { font-size:13.5px; display:block; }
+  .pay-card.late { border-color:#ff5a4f; background:rgba(255,90,79,.12); } .pay-card.late b { color:#ff7b72; }
+  .pay-card.soon { border-color:var(--gold); background:var(--gold-glow); } .pay-card.soon b { color:var(--gold); }
+  .pay-card.paid b { color:#4fd69c; }
+  .pay-card button { margin-top:8px; padding:8px 12px; border-radius:10px; border:1px solid var(--line); background:var(--bg-card2); color:var(--text); font-size:11.5px; font-weight:700; }
+  .fin-sum { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px; }
+  .fin-sum > div { background:var(--bg-card); border:1px solid var(--line); border-radius:14px; padding:10px 8px; text-align:center; }
+  .fin-sum .v { font-size:14px; font-weight:800; } .fin-sum .l { font-size:10px; color:var(--text-dim); margin-top:3px; }
+  .month-nav { display:flex; align-items:center; justify-content:space-between; margin:4px 0 12px; font-weight:800; text-transform:capitalize; }
+  .month-nav button { width:38px; height:38px; border-radius:50%; border:1px solid var(--line); background:var(--bg-card); color:var(--text); font-size:18px; }
+  .chg-chip { font-size:10.5px; font-weight:800; padding:3px 8px; border-radius:999px; }
+  .chg-chip.paid { background:rgba(79,214,156,.15); color:#4fd69c; } .chg-chip.late { background:rgba(255,90,79,.15); color:#ff7b72; }
+  .chg-chip.soon { background:var(--gold-glow); color:var(--gold); } .chg-chip.open { background:var(--bg-card2); color:var(--text-dim); }
+  .stu-actions input { padding:11px 12px; border-radius:12px; border:1px solid var(--line); background:var(--bg-input); color:var(--text); font-size:12px; width:120px; }
+  #nav-fin { display:none; } body.role-owner #nav-fin { display:flex; }
 </style>
 </head>
 <body>
@@ -280,6 +302,7 @@
 
   <div id="tab-treino">
     <div class="tabs" id="tabs"></div>
+    <div id="pay-banner" style="display:none;"></div>
     <div class="sec-title">MÚSCULOS ALVO</div>
     <div class="muscle-row" id="muscle-row"></div>
     <div class="sec-head"><span id="ex-count">0 EXERCÍCIOS</span><a id="goto-edit">Editar ✎</a></div>
@@ -288,6 +311,7 @@
   </div>
 
   <div id="tab-biblioteca" style="display:none;">
+    <input id="lib-search" type="search" placeholder="🔍 Buscar exercício (ex.: supino, rosca, agachamento)" autocomplete="off" />
     <div class="chip-row" id="lib-chips"></div>
     <div id="lib-list"></div>
   </div>
@@ -326,6 +350,21 @@
         <div class="st" id="sync-status">Não conectado — as alterações ficam só neste aparelho.</div>
       </div>
       <div class="footer-note">As alterações são salvas automaticamente neste aparelho e, com a nuvem conectada, em todos os outros.</div>
+    </div>
+  </div>
+
+  <div id="tab-fin" style="display:none;">
+    <div class="fin-sum" id="fin-sum"></div>
+    <div class="month-nav"><button id="fin-prev">‹</button><span id="fin-month"></span><button id="fin-next">›</button></div>
+    <button class="start-btn" id="fin-gen" style="margin-top:0;">＋ Gerar mensalidades do mês</button>
+    <div class="st" style="margin:6px 0 0;">Cria a cobrança de cada aluno que tem valor e vencimento definidos (aba Alunos). As já existentes são mantidas.</div>
+    <div class="sec-head"><span>COBRANÇAS</span></div>
+    <div id="fin-list"></div>
+    <div class="sec-title">CHAVE PIX DA ACADEMIA</div>
+    <div class="sync-box" style="margin-top:0;">
+      <input id="fin-pix" placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória" autocomplete="off" />
+      <button class="start-btn" id="fin-pix-save" style="margin-top:6px;padding:12px;">Salvar chave Pix</button>
+      <div class="st">Aparece para o aluno no aviso de mensalidade.</div>
     </div>
   </div>
 
@@ -401,7 +440,7 @@
 <div class="login-screen" id="acc-modal" style="z-index:130;">
   <div class="login-card" style="text-align:left;">
     <h2 id="acc-title" style="text-align:center;">Acesso gerado</h2>
-    <p style="text-align:center;">Copie e envie ao aluno. O link vale uma vez; depois ele entra com usuário e senha.</p>
+    <p style="text-align:center;">Copie a mensagem e envie ao aluno.</p>
     <textarea id="acc-text" readonly rows="8" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg-input);color:var(--text);font-size:13px;line-height:1.5;"></textarea>
     <button class="start-btn" id="acc-copy" style="margin-top:10px;">Copiar mensagem</button>
     <a id="acc-close" style="text-align:center;">Fechar</a>
@@ -484,6 +523,10 @@
       <div class="icon-bg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg></div>
       <div class="lbl">Alunos</div>
     </button>
+    <button class="nav-btn" id="nav-fin">
+      <div class="icon-bg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg></div>
+      <div class="lbl">Financeiro</div>
+    </button>
     <button class="nav-btn" id="nav-editar">
       <div class="icon-bg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
       <div class="lbl">Editar</div>
@@ -501,7 +544,7 @@
   const SYNC_KEY = "ficha_treino_sync_v1";
   let SYNC = {};
   let AUTH = null, MODE = "local", ROLE = "", COMPANY = null;
-  let lastLib = "", LIB = [];
+  let lastLib = "", LIB = [], CHARGES = [], PIXKEY = "";
   let pushTimer = null;
   const GRIPS = ["—","Pronada","Supinada","Neutra"];
   const CATEGORIES = ["Costas","Peito","Ombros","Bíceps","Tríceps","Pernas","Core","Outros"];
@@ -899,6 +942,7 @@
       muscleRow.appendChild(c);
     });
     exCount.textContent = d.exercises.length + " EXERCÍCIOS";
+    renderPayBanner();
     homeList.innerHTML = "";
     d.exercises.forEach(exItem => {
       const row = document.createElement("div"); row.className = "home-row";
@@ -1003,7 +1047,9 @@
       chip.onclick = () => { libFilter = cat; renderBiblioteca(); };
       libChips.appendChild(chip);
     });
-    const all = (MODE === "student" && LIB.length) ? LIB.map(l => ({ name: l.name, category: l.category || "Outros", grip: l.grip || "—", focus: l.focus || "", exec: l.exec || "", img: l.img || "", video: l.video || "", sets: [], interval: "", tech: "" })) : getAllExercisesFlat();
+    let all = (MODE === "student" && LIB.length) ? LIB.map(l => ({ name: l.name, category: l.category || "Outros", grip: l.grip || "—", focus: l.focus || "", exec: l.exec || "", img: l.img || "", video: l.video || "", sets: [], interval: "", tech: "" })) : libWithBank();
+    const nq = normTxt(libSearch.value || "");
+    if (nq) all = all.filter(e => nq.split(" ").every(w => normTxt(e.name).indexOf(w) >= 0));
     const filtered = libFilter === "Todos" ? all : all.filter(e => e.category === libFilter);
     libList.innerHTML = "";
     if (!filtered.length) {
@@ -1056,25 +1102,7 @@
     card.className = "ex-card";
 
     const nameLbl = document.createElement("div"); nameLbl.className="field-label"; nameLbl.textContent="Exercício";
-    const nameSelect = document.createElement("select"); nameSelect.className="edit-select";
-    if (!CATALOG.includes(exItem.name)) addToCatalog(exItem.name);
-    CATALOG.forEach(n => {
-      const opt = document.createElement("option"); opt.value = n; opt.textContent = n;
-      if (exItem.name === n) opt.selected = true;
-      nameSelect.appendChild(opt);
-    });
-    const newOpt = document.createElement("option"); newOpt.value = NEW_OPTION; newOpt.textContent = "+ Cadastrar novo exercício";
-    nameSelect.appendChild(newOpt);
-    nameSelect.onchange = () => {
-      if (nameSelect.value === NEW_OPTION) {
-        const newName = prompt("Nome do novo exercício:");
-        if (newName && newName.trim()) {
-          exItem.name = newName.trim();
-          addToCatalog(exItem.name);
-          saveData(DATA); renderEditar();
-        } else { nameSelect.value = exItem.name; }
-      } else { exItem.name = nameSelect.value; saveData(DATA); }
-    };
+    const nameSelect = exercisePicker(exItem);
 
     const focusLbl = document.createElement("div"); focusLbl.className="field-label"; focusLbl.textContent="Foco / músculo";
     const focusInput = document.createElement("input"); focusInput.className="edit-input"; focusInput.value=exItem.focus;
@@ -1191,6 +1219,7 @@
     addExBtn.onclick = () => {
       d.exercises.push(ex("Novo exercício","", ["8–12","8–12","8–12"], "60s", "", "", "—", "", "", "Outros"));
       saveData(DATA); renderEditar();
+      const last = exEditEl.querySelectorAll(".picker input"); if (last.length) { const el = last[last.length - 1]; el.scrollIntoView({ block: "center" }); el.focus(); }
     };
     exEditEl.appendChild(addExBtn);
   }
@@ -1203,21 +1232,25 @@
     tabBiblioteca.style.display = tab === "biblioteca" ? "block" : "none";
     tabEditar.style.display = tab === "editar" ? "block" : "none";
     tabAlunos.style.display = tab === "alunos" ? "block" : "none";
+    document.getElementById("tab-fin").style.display = tab === "fin" ? "block" : "none";
     treinoFooter.style.display = tab === "treino" ? "block" : "none";
     progressWrap.style.display = tab === "treino" ? "block" : "none";
     navTreino.classList.toggle("active", tab === "treino");
     navBiblioteca.classList.toggle("active", tab === "biblioteca");
     navEditar.classList.toggle("active", tab === "editar");
     navAlunos.classList.toggle("active", tab === "alunos");
+    document.getElementById("nav-fin").classList.toggle("active", tab === "fin");
     if (tab === "treino") { screenTitle.textContent = "Meu Plano"; screenSub.textContent = STORE.plans[STORE.active].name; renderTreino(); }
-    if (tab === "biblioteca") { screenTitle.textContent = "Exercícios"; screenSub.textContent = CATALOG.length + " cadastrados"; renderBiblioteca(); }
+    if (tab === "biblioteca") { screenTitle.textContent = "Exercícios"; screenSub.textContent = (MODE === "student" ? LIB.length : BUILTIN.length) + " exercícios"; renderBiblioteca(); }
     if (tab === "editar") { screenTitle.textContent = "Editar Ficha"; screenSub.textContent = "Monte sua ficha"; renderEditar(); updateBanner(); }
+    if (tab === "fin") { screenTitle.textContent = "Financeiro"; screenSub.textContent = "Mensalidades"; loadFinance(); }
     if (tab === "alunos") { screenTitle.textContent = "Alunos"; screenSub.textContent = "Fichas e acessos"; loadStudents(); }
   }
   navTreino.onclick = () => setActiveTab("treino");
   navBiblioteca.onclick = () => setActiveTab("biblioteca");
   navEditar.onclick = () => setActiveTab("editar");
   navAlunos.onclick = () => setActiveTab("alunos");
+  document.getElementById("nav-fin").onclick = () => setActiveTab("fin");
 
   resetBtn.onclick = () => {
     Object.keys(PROGRESS).forEach(k => {
@@ -1435,6 +1468,8 @@
         ["category", "grip", "img", "video"].forEach(k => { if (l[k]) e[k] = l[k]; });
       }));
       const prog = (pr && pr[0] && pr[0].data) || {};
+      try { CHARGES = await api("/rest/v1/charges?student_id=eq." + AUTH.uid + "&select=amount,due_date,paid_at&order=due_date.desc&limit=6") || []; } catch (e) { CHARGES = []; }
+      try { const cp = await api("/rest/v1/companies?id=eq." + COMPANY.id + "&select=pix_key"); PIXKEY = (cp && cp[0] && cp[0].pix_key) || ""; } catch (e) {}
       STORE = { v: 6, active: "aluno", plans: { aluno: { name: (a && a[0] && a[0].plan_name) || "Minha ficha", data: data, progress: prog } }, catalog: [], updated: 0 };
       DATA = data; PROGRESS = prog; CATALOG = [];
       setActiveTab(activeTab);
@@ -1543,11 +1578,13 @@
   async function loadStudents() {
     const box = document.getElementById("student-list"); box.textContent = "Carregando…";
     try {
-      const rows = await api("/rest/v1/profiles?role=eq.student&select=id,name,whatsapp,username,trainer_id&order=name");
+      const rows = await api("/rest/v1/profiles?role=eq.student&select=id,name,whatsapp,username,trainer_id,fee,due_day&order=name");
       const asg = await api("/rest/v1/assignments?select=student_id,plan_name");
       const prg = await api("/rest/v1/progress?select=student_id,updated_at");
+      const lateRows = ROLE === "owner" ? await api("/rest/v1/charges?paid_at=is.null&due_date=lt." + todayStr() + "&select=student_id") : [];
+      const lateSet = new Set((lateRows || []).map(x => x.student_id));
       const trs = ROLE === "owner" ? await api("/rest/v1/profiles?role=in.(owner,trainer)&select=id,name") : [];
-      STUDENTS = rows.map(r => ({ id: r.id, name: r.name, whatsapp: r.whatsapp, username: r.username,
+      STUDENTS = rows.map(r => ({ id: r.id, name: r.name, whatsapp: r.whatsapp, username: r.username, fee: r.fee, due_day: r.due_day, late: lateSet.has(r.id),
         trainer: ((trs || []).find(t => t.id === r.trainer_id) || {}).name || "",
         plan: ((asg || []).find(a => a.student_id === r.id) || {}).plan_name || "",
         last: ((prg || []).find(x => x.student_id === r.id) || {}).updated_at || "" }));
@@ -1558,7 +1595,7 @@
         card.appendChild(mk("div", "stu-av", (st.name || "?").charAt(0).toUpperCase()));
         const info = mk("div", "stu-info");
         info.appendChild(mk("div", "stu-name", st.name || "Aluno"));
-        info.appendChild(mk("div", "stu-sub", (st.plan ? "Ficha: " + st.plan : "Sem ficha") + (st.last ? " · treinou em " + new Date(st.last).toLocaleDateString("pt-BR") : "") + (st.trainer ? " · treinador: " + st.trainer : "")));
+        info.appendChild(mk("div", "stu-sub", (st.plan ? "Ficha: " + st.plan : "Sem ficha") + (st.last ? " · treinou em " + new Date(st.last).toLocaleDateString("pt-BR") : "") + (st.trainer ? " · treinador: " + st.trainer : "") + (st.late ? " · ⚠ mensalidade em atraso" : "")));
         card.appendChild(info); card.appendChild(mk("span", "chevron", "›"));
         card.onclick = () => openStudent(st);
         box.appendChild(card);
@@ -1593,6 +1630,20 @@
     const bPass = mk("button", "", "🗑 Remover aluno");
     bPass.onclick = () => removeUser(st, () => { stuScreen.classList.remove("show"); loadStudents(); });
     acc.appendChild(bLink); acc.appendChild(bPass); body.appendChild(acc);
+    if (ROLE === "owner") {
+      body.appendChild(mk("div", "stu-sec", "MENSALIDADE"));
+      const fr = mk("div", "stu-actions");
+      const fee = document.createElement("input"); fee.type = "number"; fee.min = "0"; fee.step = "0.01"; fee.placeholder = "Valor (R$)"; fee.value = st.fee == null ? "" : st.fee;
+      const dd = document.createElement("input"); dd.type = "number"; dd.min = "1"; dd.max = "28"; dd.placeholder = "Dia (1-28)"; dd.value = st.due_day == null ? "" : st.due_day;
+      const sv = mk("button", "primary", "Salvar");
+      sv.onclick = async () => {
+        const f = parseFloat(fee.value), dy = parseInt(dd.value, 10);
+        if (!(f >= 0) || !(dy >= 1 && dy <= 28)) { alert("Informe o valor e o dia de vencimento (1 a 28)."); return; }
+        try { await api("/rest/v1/profiles?id=eq." + st.id, { method: "PATCH", body: { fee: f, due_day: dy } }); st.fee = f; st.due_day = dy; alert("Mensalidade salva. Use Financeiro → Gerar mensalidades do mês."); loadStudents(); }
+        catch (e) { alert("Não consegui salvar a mensalidade."); }
+      };
+      fr.appendChild(fee); fr.appendChild(dd); fr.appendChild(sv); body.appendChild(fr);
+    }
 
     body.appendChild(mk("div", "stu-sec", "FICHA DO ALUNO"));
     body.appendChild(mk("div", "stu-sub", asg ? "Atual: " + (asg.plan_name || "sem nome") : "Nenhuma ficha atribuída ainda."));
@@ -1719,6 +1770,7 @@
     const hdr = document.querySelector(".header"); const bd = mk("span", "role-badge", ROLE === "owner" ? "ADMIN" : ROLE === "trainer" ? "TREINADOR" : "ALUNO"); hdr.appendChild(bd);
     const pb = mk("button", "", "Alterar minha senha"); pb.style.cssText = logoutBtn.style.cssText; pb.style.display = "block"; pb.onclick = changePass; logoutBtn.parentNode.insertBefore(pb, logoutBtn);
     if (MODE === "admin") document.getElementById("ai-btn").style.display = "";
+    if (ROLE === "owner") { document.body.classList.add("role-owner"); loadPix(); refreshFinBadge(); }
     document.getElementById("trainers-box").style.display = ROLE === "owner" ? "block" : "none"; if (ROLE === "owner") { loadTrainers(); loadStaff(); }
     if (MODE === "admin") {
       document.getElementById("company-box").style.display = "block";
@@ -1816,6 +1868,174 @@
       persist(); setActiveTab("editar");
     } catch (e) { st.textContent = "Não consegui gerar: " + e.message; }
     btn.disabled = false;
+  };
+
+
+  // ---- banco de exercícios + autocompletar ----
+  const EXDB = {
+    "Peito": "Supino Reto com Barra;Supino Reto com Halteres;Supino Reto Máquina;Supino Inclinado com Barra;Supino Inclinado com Halteres;Supino Inclinado Máquina;Supino Declinado com Barra;Supino Declinado com Halteres;Supino Declinado Máquina;Supino Hammer Strength;Supino no Smith;Supino Inclinado no Smith;Supino Pegada Fechada;Supino Alternado com Halteres;Supino com Pegada Neutra;Svend Press;Crucifixo Reto com Halteres;Crucifixo Inclinado com Halteres;Crucifixo Declinado com Halteres;Fly Máquina;Fly Inclinado Máquina;Crossover Cabo;Crossover Polia Baixa;Crossover Polia Alta;Crucifixo no Cabo Unilateral;Voador Unilateral;Flexão de Braço;Flexão Inclinada;Flexão Declinada;Flexão com Joelhos;Paralelas para Peito;Pullover com Halter;Pullover Máquina",
+    "Costas": "Puxada Alta Pronada Aberta;Puxada Alta Supinada;Puxada Alta Fechada Neutra;Puxada Alta com Triângulo;Puxada Alta Unilateral;Puxada Atrás da Nuca;Pull Down;Barra Fixa Pronada;Barra Fixa Supinada;Barra Fixa Neutra;Barra Fixa Assistida;Remada Curvada com Barra;Remada Curvada Supinada;Remada Curvada com Halteres;Remada Unilateral com Halter (Serrote);Remada Cavalinho;Remada Baixa Triângulo;Remada Baixa Barra Reta;Remada Baixa Pegada Aberta;Remada Máquina Guiada;Remada Unilateral Máquina;High Row Máquina;Remada no Smith;Remada Apoiada no Banco;Pullover Cabo;Levantamento Terra;Encolhimento com Halteres;Encolhimento com Barra;Encolhimento Máquina;Hiperextensão Lombar;Extensão de Lombar Máquina",
+    "Ombros": "Desenvolvimento com Halteres;Desenvolvimento Máquina;Desenvolvimento com Barra;Desenvolvimento no Smith;Desenvolvimento Arnold;Desenvolvimento Militar;Desenvolvimento Unilateral com Halter;Elevação Lateral com Halteres;Elevação Lateral Máquina;Elevação Lateral Cabo;Elevação Lateral Unilateral Cabo;Elevação Lateral Inclinado;Elevação Frontal com Halteres;Elevação Frontal Cabo;Elevação Frontal com Barra;Elevação Frontal com Anilha;Elevação Frontal (banco 75°);Crucifixo Inverso Banco 75° (halteres);Reverse Fly Máquina;Crucifixo Inverso Cabo;Face Pull;Remada Alta com Barra;Remada Alta com Halteres;Remada Alta Cabo;Rotação Externa de Ombro Cabo;Rotação Externa com Halter;Elevação em Y;Press Landmine",
+    "Bíceps": "Rosca Direta com Barra;Rosca Direta com Barra W;Rosca Direta com Halteres;Rosca Alternada com Halteres;Rosca Martelo;Rosca Martelo Corda;Rosca Martelo Cruzada;Rosca Scott com Barra W;Rosca Scott Máquina;Rosca Scott Unilateral com Halter;Rosca Inclinada Halteres;Rosca Concentrada;Rosca Spider;Rosca Bayesian Cabo;Rosca no Cabo Barra;Rosca no Cabo Corda;Rosca Unilateral Cabo;Rosca 21;Rosca Inversa com Barra;Rosca Inversa Cabo;Rosca Zottman;Rosca Máquina",
+    "Tríceps": "Tríceps Corda no Cabo;Tríceps Barra Reta Cabo;Tríceps Barra V Cabo;Tríceps Unilateral Cabo;Tríceps Pegada Invertida Cabo;Tríceps Testa com Barra W;Tríceps Testa com Halteres;Tríceps Testa Cabo;Tríceps Francês com Halter;Tríceps Francês Corda;Tríceps Francês Unilateral;Tríceps Máquina Articulada;Tríceps Mergulho no Banco;Paralelas para Tríceps;Mergulho Máquina Assistida;Supino Fechado;Tríceps Coice com Halter;Tríceps Coice Cabo;Extensão de Tríceps Overhead Cabo;Flexão Diamante;JM Press",
+    "Pernas": "Agachamento Livre;Agachamento no Smith;Hack Machine;Agachamento Frontal;Agachamento Sumô;Agachamento Búlgaro;Agachamento Goblet;Agachamento Sissy;Agachamento Pausado;Agachamento no Banco;Leg Press 45°;Leg Press Horizontal;Leg Press Unilateral;Cadeira Extensora;Cadeira Extensora Unilateral;Cadeira Flexora;Mesa Flexora;Flexora em Pé;Stiff com Barra;Stiff-leg com Halteres;Levantamento Terra Romeno;Levantamento Terra Sumô;Avanço com Halteres;Avanço no Smith;Passada Caminhando;Afundo;Afundo Reverso;Step-up;Elevação Pélvica (máquina/Smith);Elevação Pélvica com Barra;Ponte de Glúteo;Glúteo na Polia (Coice);Glúteo Máquina;Hiperextensão Glútea;Extensão de Quadril no Cabo;Cadeira Abdutora;Cadeira Adutora;Abdução no Cabo;Panturrilha em Pé;Panturrilha Sentada;Panturrilha no Leg Press;Panturrilha no Smith;Panturrilha Unilateral;Good Morning;Nórdico (Nordic Curl)",
+    "Core": "Abdominal Crunch;Abdominal Máquina;Abdominal Máquina + Prancha;Abdominal Infra no Banco;Abdominal Declinado;Abdominal na Polia;Abdominal Remador;Abdominal Bicicleta;Elevação de Pernas Suspenso;Elevação de Joelhos Suspenso;Elevação de Pernas Deitado;Prancha;Prancha Lateral;Prancha com Elevação;Roda Abdominal;Russian Twist;Mountain Climber;Dead Bug;Pallof Press;Lenhador no Cabo;Torção no Cabo;Hollow Hold;Vacuum Abdominal;Toes to Bar",
+    "Outros": "Esteira (caminhada);Esteira (corrida);Esteira Inclinada;Bicicleta Ergométrica;Bicicleta Spinning;Elíptico;Escada (Stair Climber);Remo Ergômetro;Simulador de Esqui;Corda Naval;Pular Corda;Burpee;Polichinelo;Kettlebell Swing;Turkish Get-up;Caminhada do Fazendeiro;Trenó (empurrar);Box Jump;Slam Ball;Medicine Ball Throw;Aquecimento Articular;Mobilidade de Quadril;Mobilidade de Ombro;Alongamento de Posterior;Alongamento de Peitoral;Alongamento de Quadríceps;Ativação de Glúteo com Mini Band"
+  };
+  const BUILTIN = []; Object.keys(EXDB).forEach(cat => EXDB[cat].split(";").forEach(n => BUILTIN.push({ name: n, category: cat })));
+  const BUILTIN_MAP = {}; BUILTIN.forEach(b => { BUILTIN_MAP[b.name] = b; });
+  function normTxt(t) { return String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim(); }
+  function guessGrip(n) {
+    const t = normTxt(n);
+    if (/(supinada|rosca direta|rosca scott|rosca inclinada|rosca concentrada|rosca spider|bayesian|rosca no cabo|rosca unilateral|barra fixa supinada)/.test(t)) return "Supinada";
+    if (/(martelo|neutra|triangulo|corda|pallof|face pull|paralelas)/.test(t)) return "Neutra";
+    if (/(pronada|supino|desenvolvimento|crucifixo inverso|rosca inversa|remada curvada com barra|barra fixa pronada)/.test(t)) return "Pronada";
+    return "—";
+  }
+  function exerciseOptions() {
+    const map = new Map();
+    BUILTIN.forEach(b => map.set(b.name, { name: b.name, category: b.category }));
+    LIB.forEach(l => map.set(l.name, { name: l.name, category: l.category || (map.get(l.name) || {}).category || "Outros", grip: l.grip, img: l.img, video: l.video }));
+    Object.values(DATA).forEach(dd => dd.exercises.forEach(e => { if (!map.has(e.name)) map.set(e.name, { name: e.name, category: e.category }); }));
+    CATALOG.forEach(n => { if (!map.has(n)) map.set(n, { name: n, category: (BUILTIN_MAP[n] || {}).category }); });
+    return Array.from(map.values());
+  }
+  function exercisePicker(exItem) {
+    const wrap = document.createElement("div"); wrap.className = "picker";
+    const input = document.createElement("input"); input.className = "edit-input name-input"; input.value = exItem.name; input.placeholder = "Digite para buscar o exercício…"; input.autocomplete = "off";
+    const box = document.createElement("div"); box.className = "picker-box"; box.style.display = "none";
+    function choose(opt) {
+      exItem.name = opt.name;
+      const known = BUILTIN_MAP[opt.name] || opt;
+      if (opt.category || known.category) exItem.category = opt.category || known.category;
+      if (!exItem.grip || exItem.grip === "—") exItem.grip = opt.grip && opt.grip !== "—" ? opt.grip : guessGrip(opt.name);
+      if (!exItem.img && opt.img) exItem.img = opt.img;
+      if (!exItem.video && opt.video) exItem.video = opt.video;
+      addToCatalog(opt.name); saveData(DATA); renderEditar();
+    }
+    function render() {
+      const q = normTxt(input.value), words = q ? q.split(" ") : [];
+      let res = exerciseOptions().filter(o => words.every(w => normTxt(o.name).indexOf(w) >= 0));
+      res.sort((a, b) => (normTxt(a.name).indexOf(q) === 0 ? 0 : 1) - (normTxt(b.name).indexOf(q) === 0 ? 0 : 1) || a.name.localeCompare(b.name, "pt-BR"));
+      box.innerHTML = "";
+      res.slice(0, 8).forEach(o => {
+        const row = document.createElement("div"); row.className = "picker-opt";
+        row.appendChild(document.createTextNode(o.name)); const sm = document.createElement("small"); sm.textContent = o.category || ""; row.appendChild(sm);
+        row.onmousedown = e => { e.preventDefault(); choose(o); };
+        box.appendChild(row);
+      });
+      const typed = input.value.trim();
+      if (typed.length > 2 && !res.some(o => normTxt(o.name) === q)) {
+        const row = document.createElement("div"); row.className = "picker-opt new"; row.textContent = "+ Cadastrar “" + typed + "” como novo exercício";
+        row.onmousedown = e => { e.preventDefault(); choose({ name: typed, category: exItem.category && exItem.category !== "Outros" ? exItem.category : undefined }); };
+        box.appendChild(row);
+      }
+      box.style.display = box.children.length ? "block" : "none";
+    }
+    input.onfocus = () => { input.select(); render(); };
+    input.oninput = render;
+    input.onblur = () => { setTimeout(() => { box.style.display = "none"; input.value = exItem.name; }, 120); };
+    wrap.appendChild(input); wrap.appendChild(box);
+    return wrap;
+  }
+  function libWithBank() {
+    const flat = getAllExercisesFlat(), seen = new Set(flat.map(e => e.name)), out = flat.slice();
+    LIB.forEach(l => { if (!seen.has(l.name)) { seen.add(l.name); out.push(ex(l.name, "", [], "", "", "", l.grip || "—", l.img || "", l.video || "", l.category || "Outros")); } });
+    BUILTIN.forEach(b => { if (!seen.has(b.name)) { seen.add(b.name); out.push(ex(b.name, "", [], "", "", "", guessGrip(b.name), "", "", b.category)); } });
+    return out;
+  }
+  const libSearch = document.getElementById("lib-search");
+  libSearch.oninput = () => renderBiblioteca();
+
+  // ---- financeiro: mensalidades e avisos ----
+  const pad2 = n => String(n).padStart(2, "0");
+  const ymd = d => d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  function todayStr() { return ymd(new Date()); }
+  function brDate(s) { const p = s.split("-"); return p[2] + "/" + p[1]; }
+  function daysUntil(s) { const p = s.split("-"), d = new Date(+p[0], +p[1] - 1, +p[2]), t = new Date(); t.setHours(0, 0, 0, 0); return Math.round((d - t) / 86400000); }
+  function fmtMoney(n) { return Number(n || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); }
+  function chargeState(c) {
+    if (c.paid_at) return { k: "paid", label: "Pago em " + brDate(c.paid_at) };
+    const d = daysUntil(c.due_date);
+    if (d < 0) return { k: "late", label: "Atrasado há " + (-d) + (d === -1 ? " dia" : " dias") };
+    if (d === 0) return { k: "soon", label: "Vence hoje" };
+    if (d <= 5) return { k: "soon", label: "Vence em " + d + (d === 1 ? " dia" : " dias") };
+    return { k: "open", label: "A vencer" };
+  }
+  function renderPayBanner() {
+    const el = document.getElementById("pay-banner"); el.innerHTML = ""; el.style.display = "none";
+    if (MODE !== "student" || !CHARGES.length) return;
+    const unpaid = CHARGES.filter(c => !c.paid_at).sort((a, b) => a.due_date < b.due_date ? -1 : 1)[0];
+    const c = unpaid || CHARGES[0], st = chargeState(c);
+    el.style.display = "block"; el.className = "pay-card " + st.k;
+    el.appendChild(mk("b", "", st.k === "paid" ? "✓ Mensalidade em dia" : st.k === "late" ? "Mensalidade em atraso" : st.k === "soon" ? "Mensalidade perto do vencimento" : "Próxima mensalidade"));
+    el.appendChild(mk("div", "", fmtMoney(c.amount) + " · vencimento " + brDate(c.due_date) + " · " + st.label));
+    if (!c.paid_at && PIXKEY) {
+      const b = mk("button", "", "Copiar chave Pix");
+      b.onclick = async () => { try { await navigator.clipboard.writeText(PIXKEY); } catch (e) { prompt("Chave Pix:", PIXKEY); } b.textContent = "✓ Copiada"; setTimeout(() => { b.textContent = "Copiar chave Pix"; }, 1500); };
+      el.appendChild(b);
+    }
+  }
+  function reminderMsg(name, c) {
+    const d = daysUntil(c.due_date);
+    return "Oi" + (name ? " " + name : "") + "! " + (d < 0 ? "Sua mensalidade de " + fmtMoney(c.amount) + " está em atraso desde " + brDate(c.due_date) + "." : "Lembrete: sua mensalidade de " + fmtMoney(c.amount) + " vence " + (d === 0 ? "hoje" : "em " + brDate(c.due_date)) + ".")
+      + (PIXKEY ? "\nPix: " + PIXKEY : "") + "\nQualquer dúvida é só chamar!";
+  }
+  async function loadPix() { try { const cp = await api("/rest/v1/companies?id=eq." + COMPANY.id + "&select=pix_key"); PIXKEY = (cp && cp[0] && cp[0].pix_key) || ""; document.getElementById("fin-pix").value = PIXKEY; } catch (e) {} }
+  async function refreshFinBadge() {
+    try {
+      const lim = new Date(); lim.setDate(lim.getDate() + 3);
+      const rows = await api("/rest/v1/charges?paid_at=is.null&due_date=lte." + ymd(lim) + "&select=id");
+      document.querySelector("#nav-fin .lbl").textContent = rows && rows.length ? "Financeiro (" + rows.length + ")" : "Financeiro";
+    } catch (e) {}
+  }
+  let finMonth = new Date(); finMonth.setDate(1);
+  async function loadFinance() {
+    const start = new Date(finMonth.getFullYear(), finMonth.getMonth(), 1), next = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+    document.getElementById("fin-month").textContent = start.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    const box = document.getElementById("fin-list"); box.textContent = "Carregando…";
+    try {
+      const sel = "&select=id,student_id,amount,due_date,paid_at,profiles(name)&order=due_date";
+      const cur = await api("/rest/v1/charges?due_date=gte." + ymd(start) + "&due_date=lt." + ymd(next) + sel) || [];
+      const old = await api("/rest/v1/charges?paid_at=is.null&due_date=lt." + ymd(start) + sel) || [];
+      const sum = a => a.reduce((t, c) => t + Number(c.amount), 0);
+      const lateAll = cur.concat(old).filter(c => !c.paid_at && daysUntil(c.due_date) < 0);
+      const cards = [[fmtMoney(sum(cur.filter(c => c.paid_at))), "Recebido"], [fmtMoney(sum(cur.filter(c => !c.paid_at && daysUntil(c.due_date) >= 0))), "A receber"], [fmtMoney(sum(lateAll)) + " (" + lateAll.length + ")", "Em atraso"]];
+      const sm = document.getElementById("fin-sum"); sm.innerHTML = "";
+      cards.forEach(x => { const d = mk("div"); d.appendChild(mk("div", "v", x[0])); d.appendChild(mk("div", "l", x[1])); sm.appendChild(d); });
+      const rows = old.concat(cur); box.innerHTML = "";
+      if (!rows.length) { box.appendChild(mk("div", "empty-note", "Nenhuma cobrança neste mês. Defina valor e vencimento em cada aluno e toque em “Gerar mensalidades do mês”.")); }
+      rows.forEach(c => {
+        const nm = (c.profiles && c.profiles.name) || "Aluno", st = chargeState(c);
+        const card = mk("div", "stu-card"); card.style.cursor = "default"; card.style.flexWrap = "wrap";
+        const info = mk("div", "stu-info"); info.appendChild(mk("div", "stu-name", nm)); info.appendChild(mk("div", "stu-sub", fmtMoney(c.amount) + " · vence " + brDate(c.due_date) + (c.due_date < ymd(start) ? " (mês anterior)" : "")));
+        card.appendChild(info); card.appendChild(mk("span", "chg-chip " + st.k, st.label));
+        const act = mk("div", "stu-actions"); act.style.cssText = "flex:1 1 100%;margin-top:8px;";
+        const bp = mk("button", c.paid_at ? "" : "primary", c.paid_at ? "Desfazer pagamento" : "✓ Marcar como pago");
+        bp.onclick = async () => { try { await api("/rest/v1/charges?id=eq." + c.id, { method: "PATCH", body: { paid_at: c.paid_at ? null : todayStr() } }); loadFinance(); refreshFinBadge(); } catch (e) { alert("Não consegui atualizar."); } };
+        act.appendChild(bp);
+        if (!c.paid_at) { const br = mk("button", "", "Copiar lembrete"); br.onclick = () => showAccess("Lembrete para " + nm, reminderMsg(nm, c)); act.appendChild(br); }
+        const bd = mk("button", "", "Excluir"); bd.onclick = async () => { if (!confirm("Excluir esta cobrança?")) return; try { await api("/rest/v1/charges?id=eq." + c.id, { method: "DELETE" }); loadFinance(); refreshFinBadge(); } catch (e) { alert("Não consegui excluir."); } };
+        act.appendChild(bd); card.appendChild(act); box.appendChild(card);
+      });
+    } catch (e) { box.textContent = "Não consegui carregar o financeiro."; }
+  }
+  document.getElementById("fin-prev").onclick = () => { finMonth = new Date(finMonth.getFullYear(), finMonth.getMonth() - 1, 1); loadFinance(); };
+  document.getElementById("fin-next").onclick = () => { finMonth = new Date(finMonth.getFullYear(), finMonth.getMonth() + 1, 1); loadFinance(); };
+  document.getElementById("fin-gen").onclick = async () => {
+    try {
+      const studs = await api("/rest/v1/profiles?role=eq.student&fee=not.is.null&due_day=not.is.null&select=id,fee,due_day");
+      if (!studs.length) { alert("Nenhum aluno com valor e vencimento definidos. Abra um aluno e preencha a mensalidade."); return; }
+      const y = finMonth.getFullYear(), m = finMonth.getMonth() + 1;
+      const body = studs.map(x => ({ student_id: x.id, company_id: COMPANY.id, amount: x.fee, due_date: y + "-" + pad2(m) + "-" + pad2(x.due_day) }));
+      await api("/rest/v1/charges?on_conflict=student_id,due_date", { method: "POST", headers: { Prefer: "resolution=ignore-duplicates,return=minimal" }, body: body });
+      alert("Mensalidades geradas para " + studs.length + " aluno(s). As que já existiam foram mantidas.");
+      loadFinance(); refreshFinBadge();
+    } catch (e) { alert("Não consegui gerar as mensalidades."); }
+  };
+  document.getElementById("fin-pix-save").onclick = async () => {
+    const v = document.getElementById("fin-pix").value.trim();
+    try { await api("/rest/v1/companies?id=eq." + COMPANY.id, { method: "PATCH", body: { pix_key: v || null } }); PIXKEY = v; alert("Chave Pix salva."); } catch (e) { alert("Não consegui salvar a chave Pix."); }
   };
 
   setActiveTab("treino");
