@@ -1228,6 +1228,7 @@
   function setActiveTab(tab) {
     activeTab = tab;
     renderPlanBar();
+    document.getElementById("plan-bar").style.display = (tab === "treino" || tab === "editar") ? "" : "none";   // a ficha só aparece onde é usada
     tabTreino.style.display = tab === "treino" ? "block" : "none";
     tabBiblioteca.style.display = tab === "biblioteca" ? "block" : "none";
     tabEditar.style.display = tab === "editar" ? "block" : "none";
