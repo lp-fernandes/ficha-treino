@@ -359,6 +359,11 @@
   .cat-prev img { width:100%; height:100%; object-fit:contain; }
   #nav-cat { display:none; }
   @media (min-width:1024px) { body.platform #nav-cat { display:flex; } #nav-cat { order:90; } }
+  .login-card input[type=checkbox] { width:auto; margin:2px 8px 0 0; flex-shrink:0; }
+  .terms-row { display:flex; align-items:flex-start; font-size:12px; color:var(--text-dim); line-height:1.5; margin:10px 0 0; }
+  .terms-row a, .login-foot a { color:var(--gold); text-decoration:underline; }
+  .login-foot { text-align:center; font-size:11px; color:var(--text-dim2); margin-top:18px; }
+  .hp-field { position:absolute; left:-9999px; width:1px; height:1px; opacity:0; }
 </style>
 </head>
 <body>
@@ -475,6 +480,7 @@
         <h3>Minha conta</h3>
         <button class="start-btn" id="cfg-pass" style="background:var(--bg-card2);color:var(--text);box-shadow:none;">Alterar minha senha</button>
         <button class="start-btn" id="cfg-logout" style="background:var(--bg-card2);color:var(--text);box-shadow:none;">Sair da conta</button>
+        <div class="st"><a href="termos.html" target="_blank" rel="noopener" style="color:var(--gold);">Termos de Uso</a> · <a href="privacidade.html" target="_blank" rel="noopener" style="color:var(--gold);">Política de Privacidade</a></div>
       </div>
     </div>
   </div>
@@ -598,6 +604,8 @@
       <input id="login-user" placeholder="Usuário (administrador: e-mail)" autocapitalize="none" autocomplete="username" style="margin-top:8px;" />
       <input id="login-pass" type="password" placeholder="Senha" autocomplete="current-password" style="margin-top:8px;" />
       <button class="start-btn" id="login-btn" style="margin-top:12px;">Entrar</button>
+      <a id="forgot">Esqueci minha senha (administrador)</a>
+      <div class="st" style="text-align:center;margin-top:6px;">Treinador ou aluno: peça uma nova senha ao administrador da academia.</div>
       <a id="show-signup">Cadastrar minha academia</a>
     </div>
     <div id="signup-form" style="display:none;">
@@ -605,9 +613,12 @@
       <input id="su-name" placeholder="Seu nome (responsável)" autocomplete="name" style="margin-top:8px;" />
       <input id="su-email" type="email" placeholder="E-mail do administrador" autocomplete="email" style="margin-top:8px;" />
       <input id="su-pass" type="password" placeholder="Senha (mínimo 8 caracteres)" autocomplete="new-password" style="margin-top:8px;" />
+      <input id="su-website" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true" />
+      <label class="terms-row"><input type="checkbox" id="su-terms" /><span>Li e aceito os <a href="termos.html" target="_blank" rel="noopener">Termos de Uso</a> e a <a href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>.</span></label>
       <button class="start-btn" id="su-btn" style="margin-top:12px;">Criar conta da academia</button>
       <a id="show-login">Já tenho conta — entrar</a>
     </div>
+    <div class="login-foot"><a href="termos.html" target="_blank" rel="noopener">Termos de Uso</a> · <a href="privacidade.html" target="_blank" rel="noopener">Privacidade</a></div>
     <a id="login-local">Usar só neste aparelho, sem login</a>
   </div>
 </div>
@@ -696,7 +707,7 @@
   const STORE_KEY = "ficha_treino_store_v6";
   const SYNC_KEY = "ficha_treino_sync_v1";
   let SYNC = {};
-  let AUTH = null, MODE = "local", ROLE = "", COMPANY = null;
+  let AUTH = null, MODE = "local", ROLE = "", COMPANY = null, RECOVERY = false;
   let lastLib = "", LIB = [], CHARGES = [], PIXKEY = "", PAYONLINE = false, NOTIFS = [], lastNotifCount = 0, GLOBAL = [], GMAP = {}, PLATFORM = false;
   let pushTimer = null;
   const GRIPS = ["—","Pronada","Supinada","Neutra"];
@@ -1631,6 +1642,7 @@
   async function consumeLoginLink() {   // volta do e-mail de confirmação do administrador
     const h = location.hash || "";
     if (!/[#&]access_token=/.test(h)) return;
+    if (/[#&]type=recovery/.test(h)) RECOVERY = true;
     history.replaceState(null, "", location.pathname + location.search);
     const g = k => decodeURIComponent((h.match(new RegExp("[#&]" + k + "=([^&]+)")) || [, ""])[1]);
     saveAuth({ access_token: g("access_token"), refresh_token: g("refresh_token"), expires_in: parseInt(g("expires_in") || "3600", 10) });
@@ -1893,6 +1905,13 @@
     const slug = acad.trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
     return slug ? u.replace(/[^a-z0-9._-]/g, "") + "@" + slug + ".ficha.local" : "";
   }
+  document.getElementById("forgot").onclick = async () => {
+    let em = document.getElementById("login-user").value.trim();
+    if (em.indexOf("@") < 1) em = (prompt("Digite o e-mail do administrador da academia:") || "").trim();
+    if (em.indexOf("@") < 1) return;
+    try { await fetch(SB + "/auth/v1/recover?redirect_to=" + encodeURIComponent(location.origin + location.pathname), { method: "POST", headers: { apikey: DEFAULT_SUPA.key, "Content-Type": "application/json" }, body: JSON.stringify({ email: em }) }); } catch (e) {}
+    loginMsg("Se esse e-mail estiver cadastrado, enviamos um link para redefinir a senha. Abra-o neste aparelho.");
+  };
   document.getElementById("show-signup").onclick = () => { document.getElementById("login-form").style.display = "none"; document.getElementById("signup-form").style.display = "block"; };
   document.getElementById("show-login").onclick = () => { document.getElementById("signup-form").style.display = "none"; document.getElementById("login-form").style.display = "block"; };
   document.getElementById("login-btn").onclick = async () => {
@@ -1909,9 +1928,11 @@
   };
   document.getElementById("su-btn").onclick = async () => {
     const f = id => document.getElementById(id).value.trim(), pw = document.getElementById("su-pass").value;
+    if (f("su-website")) return;   // campo-isca: só robôs preenchem
+    if (!document.getElementById("su-terms").checked) { loginMsg("Para criar a conta, aceite os Termos de Uso e a Política de Privacidade."); return; }
     if (!f("su-company") || !f("su-name") || !f("su-email") || pw.length < 8) { loginMsg("Preencha todos os campos. A senha precisa ter 8 caracteres ou mais."); return; }
     try {
-      const r = await fetch(SB + "/auth/v1/signup?redirect_to=" + encodeURIComponent(location.origin + location.pathname), { method: "POST", headers: { apikey: DEFAULT_SUPA.key, "Content-Type": "application/json" }, body: JSON.stringify({ email: f("su-email"), password: pw, data: { company_name: f("su-company"), name: f("su-name") } }) });
+      const r = await fetch(SB + "/auth/v1/signup?redirect_to=" + encodeURIComponent(location.origin + location.pathname), { method: "POST", headers: { apikey: DEFAULT_SUPA.key, "Content-Type": "application/json" }, body: JSON.stringify({ email: f("su-email"), password: pw, data: { company_name: f("su-company"), name: f("su-name"), accepted_terms_at: new Date().toISOString(), terms_version: "2026-10" } }) });
       const j = await r.json();
       if (j.access_token) { saveAuth(j); location.reload(); return; }
       if (r.ok) { loginMsg("Conta criada! Enviamos um e-mail de confirmação para " + f("su-email") + ". Confirme e depois entre aqui usando esse e-mail e a senha."); document.getElementById("show-login").onclick(); }
@@ -1936,9 +1957,9 @@
       ROLE = prof[0].role; COMPANY = { id: prof[0].company_id, name: prof[0].companies.name, slug: prof[0].companies.slug };
       MODE = (ROLE === "owner" || ROLE === "trainer") ? "admin" : "student";
       const me = await api("/auth/v1/user");
-      if (me && me.user_metadata && me.user_metadata.must_change) {
+      if (RECOVERY || (me && me.user_metadata && me.user_metadata.must_change)) {
         let pw = "";
-        while (pw.length < 8) pw = prompt("Primeiro acesso: escolha uma nova senha (mínimo 8 caracteres):") || "";
+        while (pw.length < 8) pw = prompt((RECOVERY ? "Redefinição de senha" : "Primeiro acesso") + ": escolha uma nova senha (mínimo 8 caracteres):") || "";
         await api("/auth/v1/user", { method: "PUT", body: { password: pw, data: { must_change: false } } });
       }
     } catch (e) { MODE = "local"; AUTH = null; try { localStorage.removeItem(AUTH_KEY); } catch (e2) {} loginMsg("Não consegui entrar: sua conta não está ligada a uma academia ou a sessão expirou."); return; }
