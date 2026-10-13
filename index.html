@@ -364,6 +364,11 @@
   .terms-row a, .login-foot a { color:var(--gold); text-decoration:underline; }
   .login-foot { text-align:center; font-size:11px; color:var(--text-dim2); margin-top:18px; }
   .hp-field { position:absolute; left:-9999px; width:1px; height:1px; opacity:0; }
+  #nav-hist { display:none; } body.mode-student #nav-hist { display:flex; }
+  .hist-det { flex:1 1 100%; margin-top:8px; padding-top:8px; border-top:1px solid var(--line); font-size:11.5px; color:var(--text-dim); line-height:1.6; }
+  .hist-det b { color:var(--text); font-size:12px; }
+  .chart-box { background:var(--bg-card); border:1px solid var(--line); border-radius:16px; padding:12px 10px 6px; margin:12px 0; }
+  .chart-box .ttl { font-size:11px; font-weight:800; letter-spacing:.06em; color:var(--text-dim); margin:0 4px 4px; }
 </style>
 </head>
 <body>
@@ -431,6 +436,8 @@
       <div class="footer-note">As alterações são salvas automaticamente neste aparelho e, com a nuvem conectada, em todos os outros.</div>
     </div>
   </div>
+
+  <div id="tab-hist" style="display:none;"><div id="hist-body"></div></div>
 
   <div id="tab-cat" style="display:none;">
     <div class="cat-bar">
@@ -556,6 +563,16 @@
   </div>
 </div>
 
+<div class="login-screen" id="sum-modal" style="z-index:150;">
+  <div class="login-card">
+    <div style="font-size:44px;">🏁</div>
+    <h2>Treino concluído!</h2>
+    <div id="sum-body"></div>
+    <button class="start-btn" id="sum-hist" style="margin-top:14px;">Ver meu histórico</button>
+    <a id="sum-close">Fechar</a>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <div class="login-screen" id="tpl-modal" style="z-index:130;">
@@ -619,6 +636,7 @@
       <a id="show-login">Já tenho conta — entrar</a>
     </div>
     <div class="login-foot"><a href="termos.html" target="_blank" rel="noopener">Termos de Uso</a> · <a href="privacidade.html" target="_blank" rel="noopener">Privacidade</a></div>
+    <a id="login-reset">Problemas para entrar? Limpar a sessão deste aparelho</a>
     <a id="login-local">Usar só neste aparelho, sem login</a>
   </div>
 </div>
@@ -691,6 +709,10 @@
       <div class="icon-bg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
       <div class="lbl">Catálogo global</div>
     </button>
+    <button class="nav-btn" id="nav-hist">
+      <div class="icon-bg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg></div>
+      <div class="lbl">Histórico</div>
+    </button>
     <button class="nav-btn" id="nav-editar">
       <div class="icon-bg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
       <div class="lbl">Editar</div>
@@ -708,7 +730,7 @@
   const SYNC_KEY = "ficha_treino_sync_v1";
   let SYNC = {};
   let AUTH = null, MODE = "local", ROLE = "", COMPANY = null, RECOVERY = false;
-  let lastLib = "", LIB = [], CHARGES = [], PIXKEY = "", PAYONLINE = false, NOTIFS = [], lastNotifCount = 0, GLOBAL = [], GMAP = {}, PLATFORM = false;
+  let lastLib = "", LIB = [], CHARGES = [], PIXKEY = "", PAYONLINE = false, NOTIFS = [], lastNotifCount = 0, GLOBAL = [], GMAP = {}, PLATFORM = false, HISTORY = [];
   let pushTimer = null;
   const GRIPS = ["—","Pronada","Supinada","Neutra"];
   const CATEGORIES = ["Costas","Peito","Ombros","Bíceps","Tríceps","Pernas","Core","Outros"];
@@ -1193,7 +1215,7 @@
     const finalizeBtn = document.createElement("button");
     finalizeBtn.className = "finalize-btn";
     finalizeBtn.textContent = "✓ Finalizar treino";
-    finalizeBtn.onclick = () => closeSession();
+    finalizeBtn.onclick = () => finishSession();
     exEl.appendChild(finalizeBtn);
     updateDayProgress();
   }
@@ -1413,6 +1435,7 @@
     document.getElementById("tab-painel").style.display = tab === "painel" ? "block" : "none";
     document.getElementById("tab-config").style.display = tab === "config" ? "block" : "none";
     document.getElementById("tab-cat").style.display = tab === "cat" ? "block" : "none";
+    document.getElementById("tab-hist").style.display = tab === "hist" ? "block" : "none";
     treinoFooter.style.display = tab === "treino" ? "block" : "none";
     progressWrap.style.display = tab === "treino" ? "block" : "none";
     navTreino.classList.toggle("active", tab === "treino");
@@ -1423,11 +1446,13 @@
     document.getElementById("nav-painel").classList.toggle("active", tab === "painel");
     document.getElementById("nav-config").classList.toggle("active", tab === "config");
     document.getElementById("nav-cat").classList.toggle("active", tab === "cat");
+    document.getElementById("nav-hist").classList.toggle("active", tab === "hist");
     if (tab === "treino") { screenTitle.textContent = "Meu Plano"; screenSub.textContent = STORE.plans[STORE.active].name; renderTreino(); }
     if (tab === "biblioteca") { screenTitle.textContent = "Exercícios"; screenSub.textContent = (MODE === "student" ? (GLOBAL.length || LIB.length) : Math.max(BUILTIN.length, GLOBAL.length)) + " exercícios"; renderBiblioteca(); }
     if (tab === "editar") { screenTitle.textContent = "Editar Ficha"; screenSub.textContent = "Monte sua ficha"; renderEditar(); updateBanner(); }
     if (tab === "fin") { screenTitle.textContent = "Financeiro"; screenSub.textContent = "Mensalidades"; loadFinance(); checkNotifs(); }
     if (tab === "painel") { screenTitle.textContent = "Painel"; screenSub.textContent = "Visão geral da academia"; loadPainel(); }
+    if (tab === "hist") { screenTitle.textContent = "Histórico"; screenSub.textContent = "Seus treinos e evolução"; renderHistory(); }
     if (tab === "cat") { screenTitle.textContent = "Catálogo global"; screenSub.textContent = "Exercícios, imagens e vídeos de todas as academias"; renderCatalog(); }
     if (tab === "config") { screenTitle.textContent = "Configurações"; screenSub.textContent = COMPANY ? COMPANY.name : "Conta e preferências"; loadConfig(); }
     if (tab === "alunos") { screenTitle.textContent = "Alunos"; screenSub.textContent = "Fichas e acessos"; loadStudents(); }
@@ -1440,6 +1465,7 @@
   document.getElementById("nav-painel").onclick = () => setActiveTab("painel");
   document.getElementById("nav-config").onclick = () => setActiveTab("config");
   document.getElementById("nav-cat").onclick = () => setActiveTab("cat");
+  document.getElementById("nav-hist").onclick = () => setActiveTab("hist");
   document.getElementById("hdr-painel").onclick = () => setActiveTab("painel");
   document.getElementById("hdr-config").onclick = () => setActiveTab("config");
 
@@ -1661,6 +1687,7 @@
       }));
       const prog = (pr && pr[0] && pr[0].data) || {};
       await loadMyCharges();
+      await flushPending(); await loadHistory();
       try { const cp = await api("/rest/v1/companies?id=eq." + COMPANY.id + "&select=pix_key,pay_online"); PIXKEY = (cp && cp[0] && cp[0].pix_key) || ""; PAYONLINE = !!(cp && cp[0] && cp[0].pay_online); } catch (e) {}
       STORE = { v: 6, active: "aluno", plans: { aluno: { name: (a && a[0] && a[0].plan_name) || "Minha ficha", data: data, progress: prog } }, catalog: [], updated: 0 };
       DATA = data; PROGRESS = prog; CATALOG = [];
@@ -1772,14 +1799,14 @@
     try {
       const rows = await api("/rest/v1/profiles?role=eq.student&select=id,name,whatsapp,username,trainer_id,fee,due_day&order=name");
       const asg = await api("/rest/v1/assignments?select=student_id,plan_name");
-      const prg = await api("/rest/v1/progress?select=student_id,updated_at");
+      const prg = await api("/rest/v1/workout_logs?select=student_id,finished_at&order=finished_at.desc&limit=3000");
       const lateRows = ROLE === "owner" ? await api("/rest/v1/charges?paid_at=is.null&due_date=lt." + todayStr() + "&select=student_id") : [];
       const lateSet = new Set((lateRows || []).map(x => x.student_id));
       const trs = ROLE === "owner" ? await api("/rest/v1/profiles?role=in.(owner,trainer)&select=id,name") : [];
       STUDENTS = rows.map(r => ({ id: r.id, name: r.name, whatsapp: r.whatsapp, username: r.username, fee: r.fee, due_day: r.due_day, late: lateSet.has(r.id),
         trainer: ((trs || []).find(t => t.id === r.trainer_id) || {}).name || "",
         plan: ((asg || []).find(a => a.student_id === r.id) || {}).plan_name || "",
-        last: ((prg || []).find(x => x.student_id === r.id) || {}).updated_at || "" }));
+        last: ((prg || []).find(x => x.student_id === r.id) || {}).finished_at || "" }));
       box.innerHTML = "";
       if (!STUDENTS.length) { box.appendChild(mk("div", "empty-note", "Nenhum aluno ainda. Cadastre o primeiro acima.")); return; }
       STUDENTS.forEach(st => {
@@ -1870,6 +1897,11 @@
     }
     body.appendChild(act);
 
+    body.appendChild(mk("div", "stu-sec", "HISTÓRICO DE TREINOS"));
+    const hb = mk("div"); hb.textContent = "Carregando…"; body.appendChild(hb);
+    api("/rest/v1/workout_logs?student_id=eq." + st.id + "&order=finished_at.desc&limit=10&select=id,day_code,day_label,finished_at,duration_sec,sets_done,sets_total,volume_kg,details")
+      .then(rows => { hb.innerHTML = ""; if (!rows.length) hb.appendChild(mk("div", "stu-sub", "Nenhum treino concluído ainda.")); else renderLogCards(rows, hb); })
+      .catch(() => { hb.textContent = "Não consegui carregar o histórico."; });
     if (asg) {
       body.appendChild(mk("div", "stu-sec", "PROGRESSO POR TREINO"));
       dayStats(asg.plan, prog).forEach(x => {
@@ -1899,6 +1931,25 @@
   const acadParam = (new URLSearchParams(location.search).get("a") || "").toLowerCase().replace(/[^a-z0-9-]/g, "");
   let lastAcad = ""; try { lastAcad = localStorage.getItem("ficha_acad") || ""; } catch (e) {}
   document.getElementById("login-acad").value = acadParam || lastAcad;
+  function authErr(j, status, ctx) {
+    const code = String((j && (j.error_code || j.code || j.error)) || ""), msg = String((j && (j.msg || j.error_description || j.message)) || ""), t = code + " " + msg;
+    if (/email_not_confirmed|not confirmed/i.test(t)) return "Seu e-mail ainda não foi confirmado. Abra o e-mail de confirmação (veja também o spam) ou confirme o usuário no painel do Supabase (rode o PASSO 1 do script supabase_reparar_conta.sql).";
+    if (/rate.?limit/i.test(t) || status === 429) return "O Supabase limitou o envio de e-mails (plano gratuito: poucos por hora). Aguarde cerca de 1 hora ou crie o usuário em Authentication → Users → Add user e rode o script supabase_reparar_conta.sql.";
+    if (/already (been )?registered|user_already_exists/i.test(t)) return "Esse e-mail já está cadastrado. Entre com ele ou use “Esqueci minha senha”.";
+    if (/database error|unexpected_failure/i.test(t)) return "O banco recusou o cadastro. Confira se o SQL supabase_v2_academias.sql foi executado por completo, ou use o script supabase_reparar_conta.sql.";
+    if (/invalid login|invalid_credentials|invalid_grant/i.test(t)) return ctx === "login" ? "Código da academia, usuário ou senha incorretos. (Administrador: digite o e-mail completo no campo Usuário.)" : msg;
+    if (/signup.*disabled|signups not allowed/i.test(t)) return "O cadastro de novos usuários está desligado no Supabase (Authentication → Sign In / Providers → permitir novos usuários).";
+    return (msg || "Erro inesperado") + (code ? " (" + code + ")" : "");
+  }
+  document.getElementById("login-reset").onclick = () => {
+    if (!confirm("Isso desconecta este aparelho e limpa o cache do app. Suas fichas salvas no Supabase não são afetadas. Continuar?")) return;
+    [AUTH_KEY, MODE_KEY, "ficha_acad", "ficha_pending_logs_v1"].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+    const done = () => location.replace(location.pathname);
+    Promise.all([
+      (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) ? navigator.serviceWorker.getRegistrations().then(rs => Promise.all(rs.map(r => r.unregister()))) : null,
+      (window.caches && caches.keys) ? caches.keys().then(ks => Promise.all(ks.map(k => caches.delete(k)))) : null
+    ]).then(done, done);
+  };
   function toEmail(u, acad) {
     u = u.trim().toLowerCase();
     if (u.indexOf("@") > 0) return u;                       // administrador entra com o e-mail
@@ -1923,7 +1974,7 @@
       const r = await fetch(SB + "/auth/v1/token?grant_type=password", { method: "POST", headers: { apikey: DEFAULT_SUPA.key, "Content-Type": "application/json" }, body: JSON.stringify({ email: email, password: pw }) });
       const j = await r.json();
       if (j.access_token) { try { if (ac.trim()) localStorage.setItem("ficha_acad", ac.trim().toLowerCase()); } catch (e) {} saveAuth(j); location.reload(); }
-      else loginMsg(/confirm/i.test(j.msg || j.error_description || "") ? "Confirme seu e-mail pelo link que enviamos e tente de novo." : "Código da academia, usuário ou senha incorretos.");
+      else loginMsg(authErr(j, r.status, "login"));
     } catch (e) { loginMsg("Sem conexão. Tente de novo."); }
   };
   document.getElementById("su-btn").onclick = async () => {
@@ -1935,8 +1986,9 @@
       const r = await fetch(SB + "/auth/v1/signup?redirect_to=" + encodeURIComponent(location.origin + location.pathname), { method: "POST", headers: { apikey: DEFAULT_SUPA.key, "Content-Type": "application/json" }, body: JSON.stringify({ email: f("su-email"), password: pw, data: { company_name: f("su-company"), name: f("su-name"), accepted_terms_at: new Date().toISOString(), terms_version: "2026-10" } }) });
       const j = await r.json();
       if (j.access_token) { saveAuth(j); location.reload(); return; }
+      if (r.ok && j.identities && j.identities.length === 0) { loginMsg("Esse e-mail já está cadastrado. Entre com ele ou use “Esqueci minha senha”. (Se você apagou a conta no Supabase, apague também o usuário em Authentication → Users e tente de novo.)"); return; }
       if (r.ok) { loginMsg("Conta criada! Enviamos um e-mail de confirmação para " + f("su-email") + ". Confirme e depois entre aqui usando esse e-mail e a senha."); document.getElementById("show-login").onclick(); }
-      else loginMsg(j.msg || j.error_description || "Não consegui criar a conta.");
+      else loginMsg(authErr(j, r.status, "signup"));
     } catch (e) { loginMsg("Sem conexão. Tente de novo."); }
   };
   document.getElementById("login-local").onclick = () => { try { localStorage.setItem(MODE_KEY, "local"); } catch (e) {} loginScreen.classList.remove("show"); };
@@ -1962,7 +2014,7 @@
         while (pw.length < 8) pw = prompt((RECOVERY ? "Redefinição de senha" : "Primeiro acesso") + ": escolha uma nova senha (mínimo 8 caracteres):") || "";
         await api("/auth/v1/user", { method: "PUT", body: { password: pw, data: { must_change: false } } });
       }
-    } catch (e) { MODE = "local"; AUTH = null; try { localStorage.removeItem(AUTH_KEY); } catch (e2) {} loginMsg("Não consegui entrar: sua conta não está ligada a uma academia ou a sessão expirou."); return; }
+    } catch (e) { MODE = "local"; AUTH = null; try { localStorage.removeItem(AUTH_KEY); } catch (e2) {} loginMsg(e.message === "sem academia" ? "Sua conta existe, mas não está ligada a nenhuma academia (ela pode ter sido apagada). Rode o script supabase_reparar_conta.sql no Supabase para recriar a academia, ou apague o usuário em Authentication → Users e cadastre a academia de novo." : "Sua sessão expirou ou a conta foi removida. Entre novamente."); return; }
     loginScreen.classList.remove("show");
     document.body.classList.add("mode-" + MODE);
     logoutBtn.style.display = "block";
@@ -2315,9 +2367,9 @@
     try {
       const studs = await api("/rest/v1/profiles?role=eq.student&select=id,name") || [];
       const asg = await api("/rest/v1/assignments?select=student_id") || [];
-      const prg = await api("/rest/v1/progress?select=student_id,updated_at") || [];
+      const prg = await api("/rest/v1/workout_logs?select=student_id,finished_at&order=finished_at.desc&limit=3000") || [];
       const withPlan = new Set(asg.map(a => a.student_id)), week = Date.now() - 7 * 86400000;
-      const active = new Set(prg.filter(x => new Date(x.updated_at).getTime() >= week).map(x => x.student_id));
+      const active = new Set(prg.filter(x => new Date(x.finished_at).getTime() >= week).map(x => x.student_id));
       const noPlan = studs.filter(x => !withPlan.has(x.id)), idle = studs.filter(x => withPlan.has(x.id) && !active.has(x.id));
       const cards = [[studs.length, "Alunos", ""], [withPlan.size, "Com ficha ativa", ""], [active.size, "Treinaram em 7 dias", "good"], [noPlan.length, "Sem ficha", noPlan.length ? "warn" : ""]];
       let recent = [];
@@ -2505,12 +2557,109 @@
     } catch (e) { alert("Não consegui importar: " + e.message); }
   };
 
+
+  // ---- histórico de treinos ----
+  const PENDING_KEY = "ficha_pending_logs_v1";
+  function uuid() { return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === "x" ? r : (r & 3 | 8)).toString(16); }); }
+  function pendingLogs() { try { return JSON.parse(localStorage.getItem(PENDING_KEY)) || []; } catch (e) { return []; } }
+  function setPending(a) { try { localStorage.setItem(PENDING_KEY, JSON.stringify(a)); } catch (e) {} }
+  async function postLog(l) { await api("/rest/v1/workout_logs?on_conflict=id", { method: "POST", headers: { Prefer: "resolution=ignore-duplicates,return=minimal" }, body: l }); }
+  async function flushPending() {
+    if (MODE !== "student") return;
+    const pend = pendingLogs(); if (!pend.length) return;
+    const rest = []; for (const l of pend) { try { await postLog(l); } catch (e) { rest.push(l); } }
+    setPending(rest);
+  }
+  window.addEventListener("online", () => { flushPending().then(loadHistory); });
+  async function loadHistory() {
+    if (MODE !== "student") return;
+    try { HISTORY = await api("/rest/v1/workout_logs?student_id=eq." + AUTH.uid + "&order=finished_at.desc&limit=150&select=id,day_code,day_label,plan_name,finished_at,duration_sec,sets_done,sets_total,volume_kg,details") || []; } catch (e) {}
+    const pend = pendingLogs().filter(p => !HISTORY.some(h => h.id === p.id));
+    HISTORY = pend.concat(HISTORY).sort((a, b) => a.finished_at < b.finished_at ? 1 : -1);
+  }
+  function fmtDur(sec) { const m = Math.round((sec || 0) / 60); return m >= 60 ? Math.floor(m / 60) + "h" + pad2(m % 60) : m + " min"; }
+  function bestKg(name) { let best = 0; HISTORY.forEach(h => (h.details || []).forEach(e => { if (e.name === name) (e.sets || []).forEach(x => { if (x.done && x.kg > best) best = x.kg; }); })); return best; }
+  async function finishSession() {
+    const d = DATA[current]; let total = 0, done = 0, vol = 0; const details = [], prs = [];
+    d.exercises.forEach((e, i) => {
+      const sets = e.sets.map((r, k) => {
+        const key = pKey(i, k), isDone = !!PROGRESS["done:" + key], kg = parseFloat(String(PROGRESS["kg:" + key] || "").replace(",", ".")) || 0;
+        total++; if (isDone) { done++; vol += kg * (parseInt(r, 10) || 0); }
+        return { reps: r, kg: kg, done: isDone };
+      });
+      details.push({ name: e.name, sets: sets });
+      const top = Math.max(0, ...sets.filter(x => x.done).map(x => x.kg)), prev = bestKg(e.name);
+      if (prev > 0 && top > prev) prs.push(e.name + " — " + top + " kg (antes " + prev + " kg)");
+    });
+    if (!done) { toast("Marque ao menos uma série para salvar o treino."); return; }
+    if (done < total && !confirm("Finalizar com " + done + " de " + total + " séries feitas?")) return;
+    if (MODE !== "student") { closeSession(); toast("Prévia encerrada: o histórico só é gravado para alunos."); return; }
+    const log = { id: uuid(), student_id: AUTH.uid, company_id: COMPANY.id, day_code: current, day_label: d.label, plan_name: STORE.plans[STORE.active].name,
+      started_at: new Date(sessionStart).toISOString(), finished_at: new Date().toISOString(), duration_sec: Math.round((Date.now() - sessionStart) / 1000),
+      sets_done: done, sets_total: total, volume_kg: Math.round(vol * 10) / 10, details: details };
+    try { await postLog(log); } catch (e) { setPending(pendingLogs().concat([log])); toast("Sem conexão: o treino foi guardado e será enviado quando a internet voltar."); }
+    HISTORY.unshift(log);
+    Object.keys(PROGRESS).forEach(k => { if (k.indexOf("done:" + current + ":") === 0) delete PROGRESS[k]; });   // a próxima semana começa limpa; as cargas ficam
+    saveProgress(); closeSession(); showSummary(log, prs);
+  }
+  function showSummary(l, prs) {
+    const b = document.getElementById("sum-body"); b.innerHTML = "";
+    const g = mk("div", "kpi-grid"); g.style.gridTemplateColumns = "repeat(3,1fr)";
+    [[fmtDur(l.duration_sec), "Duração"], [l.sets_done + "/" + l.sets_total, "Séries"], [Math.round(l.volume_kg).toLocaleString("pt-BR") + " kg", "Volume"]].forEach(x => {
+      const k = mk("div", "kpi"); const v = mk("div", "v", x[0]); v.style.fontSize = "17px"; k.appendChild(v); k.appendChild(mk("div", "l", x[1])); g.appendChild(k);
+    });
+    b.appendChild(g);
+    if (prs.length) {
+      const p = mk("div", "notif"); p.style.marginTop = "12px"; p.appendChild(mk("span", "", "🏆"));
+      const t = mk("div"); t.appendChild(mk("b", "", prs.length > 1 ? "Novos recordes de carga!" : "Novo recorde de carga!")); prs.forEach(x => t.appendChild(mk("span", "", x + " · "))); p.appendChild(t); b.appendChild(p);
+    }
+    document.getElementById("sum-modal").classList.add("show");
+  }
+  document.getElementById("sum-close").onclick = () => document.getElementById("sum-modal").classList.remove("show");
+  document.getElementById("sum-hist").onclick = () => { document.getElementById("sum-modal").classList.remove("show"); setActiveTab("hist"); };
+  function renderLogCards(logs, box) {
+    logs.forEach(l => {
+      const dt = new Date(l.finished_at), c = mk("div", "stu-card"); c.style.flexWrap = "wrap";
+      const info = mk("div", "stu-info");
+      info.appendChild(mk("div", "stu-name", dt.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" }) + " · " + (l.day_label || l.day_code || "Treino")));
+      info.appendChild(mk("div", "stu-sub", fmtDur(l.duration_sec) + " · " + l.sets_done + "/" + l.sets_total + " séries · " + Math.round(l.volume_kg || 0).toLocaleString("pt-BR") + " kg"));
+      c.appendChild(info); c.appendChild(mk("span", "chevron", "›"));
+      const det = mk("div", "hist-det"); det.style.display = "none";
+      (l.details || []).forEach(e => {
+        const ok = (e.sets || []).filter(x => x.done); if (!ok.length) return;
+        det.appendChild(mk("b", "", e.name)); det.appendChild(document.createElement("br"));
+        det.appendChild(document.createTextNode(ok.map(x => (x.kg ? x.kg + " kg" : "peso livre") + " × " + x.reps).join("  ·  "))); det.appendChild(document.createElement("br"));
+      });
+      c.appendChild(det); c.onclick = () => { det.style.display = det.style.display === "none" ? "block" : "none"; };
+      box.appendChild(c);
+    });
+  }
+  function weekStart(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
+  function renderHistory() {
+    const box = document.getElementById("hist-body"); box.innerHTML = "";
+    if (!HISTORY.length) { box.appendChild(mk("div", "empty-note", "Você ainda não concluiu nenhum treino. Faça o treino de hoje e toque em “Finalizar treino”: ele aparece aqui, com sua evolução.")); return; }
+    const now = new Date(), wk0 = weekStart(now), monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const weekVol = {}; HISTORY.forEach(l => { const k = ymd(weekStart(new Date(l.finished_at))); weekVol[k] = (weekVol[k] || 0) + Number(l.volume_kg || 0); });
+    let streak = 0, cur = new Date(wk0); if (weekVol[ymd(cur)] === undefined) cur.setDate(cur.getDate() - 7);
+    while (weekVol[ymd(cur)] !== undefined) { streak++; cur.setDate(cur.getDate() - 7); }
+    const inMonth = HISTORY.filter(l => new Date(l.finished_at) >= monthStart).length;
+    const vol7 = HISTORY.filter(l => Date.now() - new Date(l.finished_at).getTime() < 7 * 86400000).reduce((t, l) => t + Number(l.volume_kg || 0), 0);
+    const grid = mk("div", "kpi-grid"); grid.style.gridTemplateColumns = "repeat(3,1fr)";
+    [[inMonth, "Treinos no mês"], [streak + (streak === 1 ? " sem." : " sem."), "Sequência"], [Math.round(vol7).toLocaleString("pt-BR") + " kg", "Volume em 7 dias"]].forEach(x => { const k = mk("div", "kpi"); const v = mk("div", "v", String(x[0])); v.style.fontSize = "18px"; k.appendChild(v); k.appendChild(mk("div", "l", x[1])); grid.appendChild(k); });
+    box.appendChild(grid);
+    const vals = [], labels = []; for (let i = 7; i >= 0; i--) { const w = new Date(wk0); w.setDate(w.getDate() - i * 7); vals.push(weekVol[ymd(w)] || 0); labels.push(pad2(w.getDate()) + "/" + pad2(w.getMonth() + 1)); }
+    const max = Math.max(1, ...vals); let svg = '<svg viewBox="0 0 320 118" width="100%" role="img" aria-label="Volume por semana">';
+    vals.forEach((v, i) => { const h = Math.round(v / max * 78), x = 10 + i * 38; svg += '<rect x="' + x + '" y="' + (88 - Math.max(h, 2)) + '" width="26" height="' + Math.max(h, 2) + '" rx="5" fill="' + (i === 7 ? "#ff7a1a" : "#2b5a63") + '"/><text x="' + (x + 13) + '" y="106" font-size="9" fill="#8fb0b6" text-anchor="middle">' + labels[i] + "</text>"; });
+    const cb = mk("div", "chart-box"); cb.appendChild(mk("div", "ttl", "VOLUME POR SEMANA (KG × REPS, ESTIMADO)")); const holder = mk("div"); holder.innerHTML = svg + "</svg>"; cb.appendChild(holder); box.appendChild(cb);
+    box.appendChild(mk("div", "sec-title", "ÚLTIMOS TREINOS")); const list = mk("div"); box.appendChild(list); renderLogCards(HISTORY.slice(0, 30), list);
+  }
+
   // ---- app instalável: service worker e atalhos (?tab=...) ----
   if ("serviceWorker" in navigator && location.protocol === "https:") { navigator.serviceWorker.register("sw.js").catch(() => {}); }
   function applyTabParam() {
     const t = new URLSearchParams(location.search).get("tab");
     if (!t) return;
-    const ok = { treino: 1, biblioteca: 1 };
+    const ok = { treino: 1, biblioteca: 1 }; if (MODE === "student") ok.hist = 1;
     if (MODE === "admin") { ok.editar = 1; ok.alunos = 1; ok.painel = 1; ok.config = 1; }
     if (MODE === "local") ok.editar = 1;
     if (ROLE === "owner") ok.fin = 1;
