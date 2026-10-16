@@ -471,6 +471,7 @@
     </div>
     <div class="cat-bar">
       <button class="start-btn" id="cat-seed" style="background:var(--bg-card2);color:var(--text);box-shadow:none;">Importar banco padrão</button>
+      <button class="start-btn" id="cat-bulk" style="background:var(--bg-card2);color:var(--text);box-shadow:none;">🖼 Ferramentas de GIFs</button>
       <button class="start-btn" id="cat-seed-lib" style="background:var(--bg-card2);color:var(--text);box-shadow:none;">Importar da biblioteca da minha academia</button>
     </div>
     <div class="st" id="cat-info" style="margin:0 0 6px;font-size:11px;color:var(--text-dim);"></div>
@@ -496,12 +497,22 @@
         <button class="start-btn" id="cfg-copy" style="background:var(--bg-card2);color:var(--text);box-shadow:none;">Copiar link e código dos alunos</button>
       </div>
       <div class="sync-box cfg-owner">
-        <h3>💳 Pagamento online (Mercado Pago)</h3>
+        <h3>💳 Pagamento online com confirmação automática</h3>
         <div class="st" id="cfg-pay-status" style="margin:0 0 8px;">Verificando…</div>
+        <select id="cfg-pay-provider" style="width:100%;margin-bottom:8px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg-input);color:var(--text);font-size:13px;">
+          <option value="mercadopago">Mercado Pago</option><option value="infinitepay">InfinitePay</option>
+        </select>
         <input id="cfg-pay-token" type="password" placeholder="Access Token de produção do Mercado Pago" autocomplete="off" />
         <button class="start-btn" id="cfg-pay-save">Conectar</button>
         <button class="start-btn" id="cfg-pay-off" style="background:var(--bg-card2);color:var(--text);box-shadow:none;">Desconectar</button>
-        <div class="st">Pegue o token em mercadopago.com.br/developers → Suas integrações → Credenciais de produção. O dinheiro cai direto na sua conta do Mercado Pago; o aluno paga com Pix, cartão ou app do banco e você recebe o aviso aqui.</div>
+        <div class="st" id="cfg-pay-help"></div>
+      </div>
+      <div class="sync-box cfg-owner">
+        <h3>🔗 Link de pagamento (qualquer banco ou maquininha)</h3>
+        <input id="cfg-paylink" placeholder="https://… (link do InfinitePay, PagBank, Nubank, Stone, Cielo…)" autocomplete="off" />
+        <input id="cfg-paynote" placeholder="Instrução para o aluno (opcional)" autocomplete="off" />
+        <button class="start-btn" id="cfg-paylink-save">Salvar link</button>
+        <div class="st">O aluno vê o botão “Pagar pelo link”. Como o banco não avisa o app, ele toca em “Já paguei” e você confirma no Financeiro.</div>
       </div>
       <div class="sync-box cfg-owner">
         <h3>Chave Pix</h3>
@@ -575,6 +586,25 @@
     <button id="logout-btn" style="display:none;width:100%;margin-top:2px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--bg-card);color:var(--text-dim);font-size:12px;font-weight:700;">Sair da conta</button>
     <button id="reset-btn" style="width:100%;margin-top:2px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--bg-card);color:var(--text-dim);font-size:12px;font-weight:700;">Reiniciar marcações do dia</button>
     <div class="install-tip"><strong>Dica:</strong> toque em Compartilhar (iPhone) ou no menu ⋮ (Android) e escolha "Adicionar à Tela de Início".</div>
+  </div>
+</div>
+
+<div class="login-screen" id="bulk-modal" style="z-index:148;">
+  <div class="login-card" style="text-align:left;max-height:94vh;overflow:auto;">
+    <h2 style="text-align:center;">Ferramentas de GIFs</h2>
+    <p style="text-align:center;">Use o seu próprio banco de imagens. O arquivo precisa ter o nome do exercício em minúsculas, sem acento e com hífens. Ex.: <b>supino-reto-maquina.gif</b>.</p>
+    <button class="start-btn" id="bk-csv" style="background:var(--bg-card2);color:var(--text);box-shadow:none;">⬇ Baixar lista de nomes de arquivo (CSV)</button>
+    <h3 style="margin:16px 0 6px;font-size:13px;">1) Enviar arquivos em lote para o armazenamento do app</h3>
+    <input id="bk-files" type="file" accept="image/*" multiple />
+    <button class="start-btn" id="bk-upload" style="margin-top:6px;">Enviar e vincular</button>
+    <h3 style="margin:16px 0 6px;font-size:13px;">2) Ou vincular por endereço (arquivos já hospedados em outro lugar)</h3>
+    <input id="bk-base" placeholder="https://cdn.seudominio.com/gifs/" autocomplete="off" />
+    <select id="bk-ext"><option>gif</option><option>webp</option><option>png</option><option>jpg</option></select>
+    <button class="start-btn" id="bk-link" style="margin-top:2px;">Testar e vincular</button>
+    <label class="terms-row"><input type="checkbox" id="bk-over" /><span>Substituir a imagem de exercícios que já têm</span></label>
+    <label class="terms-row"><input type="checkbox" id="bk-create" /><span>No envio em lote, criar exercício novo quando o arquivo não tiver correspondência</span></label>
+    <div class="st" id="bk-log" style="white-space:pre-wrap;margin-top:10px;"></div>
+    <a id="bk-close" style="text-align:center;">Fechar</a>
   </div>
 </div>
 
@@ -802,7 +832,7 @@
   const SYNC_KEY = "ficha_treino_sync_v1";
   let SYNC = {};
   let AUTH = null, MODE = "local", ROLE = "", COMPANY = null, RECOVERY = false, PERMS = {};
-  let lastLib = "", LIB = [], CHARGES = [], PIXKEY = "", PAYONLINE = false, NOTIFS = [], lastNotifCount = 0, GLOBAL = [], GMAP = {}, PLATFORM = false, HISTORY = [];
+  let lastLib = "", LIB = [], CHARGES = [], PIXKEY = "", PAYONLINE = false, NOTIFS = [], lastNotifCount = 0, GLOBAL = [], GMAP = {}, PLATFORM = false, HISTORY = [], PAYLINK = "", PAYNOTE = "";
   let pushTimer = null;
   const GRIPS = ["—","Pronada","Supinada","Neutra"];
   const CATEGORIES = ["Costas","Peito","Ombros","Bíceps","Tríceps","Pernas","Core","Outros"];
@@ -1764,7 +1794,7 @@
       const prog = (pr && pr[0] && pr[0].data) || {};
       await loadMyCharges();
       await flushPending(); await loadHistory();
-      try { const cp = await api("/rest/v1/companies?id=eq." + COMPANY.id + "&select=pix_key,pay_online"); PIXKEY = (cp && cp[0] && cp[0].pix_key) || ""; PAYONLINE = !!(cp && cp[0] && cp[0].pay_online); } catch (e) {}
+      try { const cp = await api("/rest/v1/companies?id=eq." + COMPANY.id + "&select=pix_key,pay_online,pay_link,pay_note"); PIXKEY = (cp && cp[0] && cp[0].pix_key) || ""; PAYONLINE = !!(cp && cp[0] && cp[0].pay_online); PAYLINK = (cp && cp[0] && cp[0].pay_link) || ""; PAYNOTE = (cp && cp[0] && cp[0].pay_note) || ""; } catch (e) {}
       STORE = { v: 6, active: "aluno", plans: { aluno: { name: (a && a[0] && a[0].plan_name) || "Minha ficha", data: data, progress: prog } }, catalog: [], updated: 0 };
       DATA = data; PROGRESS = prog; CATALOG = [];
       setActiveTab(activeTab);
@@ -2082,7 +2112,7 @@
       pull(); return;
     }
     try {
-      const prof = await api("/rest/v1/profiles?id=eq." + AUTH.uid + "&select=role,name,company_id,permissions,companies(name,slug,pay_online,status,logo_url,phone,email,address,city,state,cnpj,legal_name)");
+      const prof = await api("/rest/v1/profiles?id=eq." + AUTH.uid + "&select=role,name,company_id,permissions,companies(name,slug,pay_online,pay_provider,pay_link,pay_note,status,logo_url,phone,email,address,city,state,cnpj,legal_name)");
       if (!prof || !prof[0] || !prof[0].companies) throw new Error("sem academia");
       ROLE = prof[0].role; COMPANY = Object.assign({ id: prof[0].company_id }, prof[0].companies); PERMS = prof[0].permissions || {};
       if (COMPANY.status === "suspended") throw new Error("suspensa");
@@ -2329,10 +2359,22 @@
       bp.onclick = () => payNow(c.id, bp);
       el.appendChild(bp);
     }
+    if (!c.paid_at && PAYLINK) {
+      const bl = mk("button", "", "🔗 Pagar pelo link"); bl.onclick = () => window.open(PAYLINK, "_blank", "noopener"); el.appendChild(bl);
+      if (PAYNOTE) el.appendChild(mk("div", "stu-sub", PAYNOTE));
+    }
     if (!c.paid_at && PIXKEY) {
       const b = mk("button", "", "Copiar chave Pix");
       b.onclick = async () => { try { await navigator.clipboard.writeText(PIXKEY); } catch (e) { prompt("Chave Pix:", PIXKEY); } b.textContent = "✓ Copiada"; setTimeout(() => { b.textContent = "Copiar chave Pix"; }, 1500); };
       el.appendChild(b);
+    }
+    if (!c.paid_at && c.id && (PAYLINK || PIXKEY)) {
+      const bc = mk("button", "", c.claimed_at ? "✓ Aviso enviado à academia" : "✅ Já paguei"); bc.disabled = !!c.claimed_at;
+      bc.onclick = async () => {
+        try { await api("/rest/v1/rpc/claim_payment", { method: "POST", body: { p_charge: c.id } }); c.claimed_at = new Date().toISOString(); toast("Avisamos a academia. Assim que ela confirmar, aparece como pago."); renderPayBanner(); }
+        catch (e) { alert("Não consegui avisar a academia. Tente de novo."); }
+      };
+      el.appendChild(bc);
     }
   }
   function reminderMsg(name, c) {
@@ -2354,7 +2396,7 @@
     document.getElementById("fin-month").textContent = start.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
     const box = document.getElementById("fin-list"); box.textContent = "Carregando…";
     try {
-      const sel = "&select=id,student_id,amount,due_date,paid_at,paid_method,profiles(name)&order=due_date";
+      const sel = "&select=id,student_id,amount,due_date,paid_at,paid_method,claimed_at,profiles(name)&order=due_date";
       const cur = await api("/rest/v1/charges?due_date=gte." + ymd(start) + "&due_date=lt." + ymd(next) + sel) || [];
       const old = await api("/rest/v1/charges?paid_at=is.null&due_date=lt." + ymd(start) + sel) || [];
       const sum = a => a.reduce((t, c) => t + Number(c.amount), 0);
@@ -2367,7 +2409,7 @@
       rows.forEach(c => {
         const nm = (c.profiles && c.profiles.name) || "Aluno", st = chargeState(c);
         const card = mk("div", "stu-card"); card.style.cursor = "default"; card.style.flexWrap = "wrap";
-        const info = mk("div", "stu-info"); info.appendChild(mk("div", "stu-name", nm)); info.appendChild(mk("div", "stu-sub", fmtMoney(c.amount) + " · vence " + brDate(c.due_date) + (c.due_date < ymd(start) ? " (mês anterior)" : "")));
+        const info = mk("div", "stu-info"); info.appendChild(mk("div", "stu-name", nm)); info.appendChild(mk("div", "stu-sub", fmtMoney(c.amount) + " · vence " + brDate(c.due_date) + (c.due_date < ymd(start) ? " (mês anterior)" : "") + (c.claimed_at && !c.paid_at ? " · 💬 aluno avisou que pagou" : "")));
         card.appendChild(info); card.appendChild(mk("span", "chg-chip " + st.k, st.label));
         const act = mk("div", "stu-actions"); act.style.cssText = "flex:1 1 100%;margin-top:8px;";
         const bp = mk("button", c.paid_at ? "" : "primary", c.paid_at ? "Desfazer pagamento" : "✓ Marcar como pago");
@@ -2403,7 +2445,7 @@
   function toast(msg) { const el = document.getElementById("toast"); el.textContent = msg; el.style.display = "block"; clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.style.display = "none"; }, 6000); }
 
   // ---- aluno: pagar online ----
-  async function loadMyCharges() { try { CHARGES = await api("/rest/v1/charges?student_id=eq." + AUTH.uid + "&select=id,amount,due_date,paid_at,paid_method&order=due_date.desc&limit=6") || []; } catch (e) { CHARGES = []; } }
+  async function loadMyCharges() { try { CHARGES = await api("/rest/v1/charges?student_id=eq." + AUTH.uid + "&select=id,amount,due_date,paid_at,paid_method,claimed_at&order=due_date.desc&limit=6") || []; } catch (e) { CHARGES = []; } }
   async function payNow(id, btn) {
     btn.disabled = true; btn.textContent = "Abrindo pagamento…";
     try {
@@ -2426,7 +2468,7 @@
   async function checkNotifs() {
     if (!can("finance")) return;
     try {
-      NOTIFS = await api("/rest/v1/notifications?read_at=is.null&order=created_at.desc&select=id,title,body,created_at") || [];
+      NOTIFS = await api("/rest/v1/notifications?read_at=is.null&order=created_at.desc&select=id,kind,title,body,created_at") || [];
       if (NOTIFS.length > lastNotifCount) toast("💰 " + NOTIFS[0].title + (NOTIFS.length > 1 ? " (+" + (NOTIFS.length - 1) + ")" : ""));
       lastNotifCount = NOTIFS.length; renderNotifs();
     } catch (e) {}
@@ -2435,7 +2477,7 @@
     const box = document.getElementById("notif-box"); box.innerHTML = "";
     if (!NOTIFS.length) return;
     NOTIFS.slice(0, 8).forEach(n => {
-      const d = mk("div", "notif"); d.appendChild(mk("span", "", "💰"));
+      const d = mk("div", "notif"); d.appendChild(mk("span", "", n.kind === "claim" ? "💬" : "💰"));
       const t = mk("div"); t.appendChild(mk("b", "", n.title)); t.appendChild(mk("span", "", (n.body || "") + " · " + new Date(n.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })));
       d.appendChild(t); box.appendChild(d);
     });
@@ -2491,17 +2533,36 @@
     fillCompanyForm();
     document.getElementById("cfg-link").textContent = "Código: " + COMPANY.slug + " · Link dos alunos: " + appLink();
     loadPix();
+    document.getElementById("cfg-paylink").value = COMPANY.pay_link || ""; document.getElementById("cfg-paynote").value = COMPANY.pay_note || "";
     const st = document.getElementById("cfg-pay-status");
-    try { const r = await payFn({ action: "status" }); st.innerHTML = r.connected ? '<span class="pill-ok">● Conectado</span> — os alunos veem o botão “Pagar agora”.' : '<span class="pill-off">○ Não conectado</span>'; }
-    catch (e) { st.textContent = "Não consegui verificar a conexão (" + e.message + ")."; }
+    try {
+      const r = await payFn({ action: "status" });
+      if (r.provider) document.getElementById("cfg-pay-provider").value = r.provider; payProviderUi();
+      st.innerHTML = r.connected ? '<span class="pill-ok">● Conectado: ' + (r.provider === "infinitepay" ? "InfinitePay" : "Mercado Pago") + '</span> — os alunos veem o botão “Pagar agora”.' : '<span class="pill-off">○ Não conectado</span>';
+    } catch (e) { st.textContent = "Não consegui verificar a conexão (" + e.message + ")."; }
   }
   document.getElementById("cfg-copy").onclick = async () => {
     const t = "Acesse o app de treino da " + COMPANY.name + ": " + appLink() + "\nCódigo da academia: " + COMPANY.slug;
     try { await navigator.clipboard.writeText(t); toast("Link copiado."); } catch (e) { prompt("Copie:", t); }
   };
+  function payProviderUi() {
+    const ip = document.getElementById("cfg-pay-provider").value === "infinitepay", t = document.getElementById("cfg-pay-token");
+    t.type = ip ? "text" : "password"; t.placeholder = ip ? "Sua InfiniteTag (sem o $)" : "Access Token de produção do Mercado Pago";
+    document.getElementById("cfg-pay-help").textContent = ip
+      ? "InfinitePay: informe a sua InfiniteTag (aparece no canto superior do app InfinitePay). O aluno paga com Pix ou cartão no checkout do InfinitePay e o app confirma sozinho. A conta precisa estar ativa para receber pelo checkout."
+      : "Mercado Pago: pegue o token em mercadopago.com.br/developers → Suas integrações → Credenciais de produção. O dinheiro cai direto na sua conta do Mercado Pago.";
+  }
+  document.getElementById("cfg-pay-provider").onchange = payProviderUi; payProviderUi();
   document.getElementById("cfg-pay-save").onclick = async () => {
-    const t = val("cfg-pay-token"); if (t.length < 20) { alert("Cole o Access Token de produção do Mercado Pago."); return; }
-    try { await payFn({ action: "save_settings", token: t }); document.getElementById("cfg-pay-token").value = ""; COMPANY.pay_online = true; toast("Mercado Pago conectado."); loadConfig(); } catch (e) { alert("Não consegui conectar: " + e.message); }
+    const prov = document.getElementById("cfg-pay-provider").value, t = val("cfg-pay-token");
+    if (t.length < 2) { alert(prov === "infinitepay" ? "Informe a sua InfiniteTag." : "Cole o Access Token de produção do Mercado Pago."); return; }
+    try { await payFn(prov === "infinitepay" ? { action: "save_settings", provider: prov, handle: t } : { action: "save_settings", provider: prov, token: t }); document.getElementById("cfg-pay-token").value = ""; COMPANY.pay_online = true; toast("Pagamento online conectado."); loadConfig(); }
+    catch (e) { alert("Não consegui conectar: " + e.message); }
+  };
+  document.getElementById("cfg-paylink-save").onclick = async () => {
+    const lk = val("cfg-paylink"), nt = val("cfg-paynote");
+    if (lk && !/^https:\/\//.test(lk)) { alert("O link precisa começar com https://"); return; }
+    try { await api("/rest/v1/companies?id=eq." + COMPANY.id, { method: "PATCH", body: { pay_link: lk || null, pay_note: nt || null } }); COMPANY.pay_link = lk; COMPANY.pay_note = nt; toast(lk ? "Link de pagamento salvo." : "Link removido."); } catch (e) { alert("Não consegui salvar: " + e.message); }
   };
   document.getElementById("cfg-pay-off").onclick = async () => {
     if (!confirm("Desconectar o pagamento online? Os alunos deixam de ver o botão “Pagar agora”.")) return;
@@ -2887,6 +2948,52 @@
     btn.disabled = false;
   };
   loadPublicSettings();
+
+
+  // ---- ferramentas de GIFs (banco de imagens próprio) ----
+  function slugOf(t) { return normTxt(t).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""); }
+  function prettyFromSlug(sl) { const t = sl.replace(/-/g, " ").trim(); return t.charAt(0).toUpperCase() + t.slice(1); }
+  const bulkModal = document.getElementById("bulk-modal");
+  const bkLog = t => { document.getElementById("bk-log").textContent = t; };
+  document.getElementById("cat-bulk").onclick = () => { bkLog(""); bulkModal.classList.add("show"); };
+  document.getElementById("bk-close").onclick = () => bulkModal.classList.remove("show");
+  document.getElementById("bk-csv").onclick = () => {
+    downloadCsv("nomes-de-arquivos-exercicios.csv", ["Exercício", "Arquivo sugerido", "Situação"], GLOBAL.map(g => [g.name, slugOf(g.name) + ".gif", g.img ? "tem imagem" : "sem imagem"]));
+  };
+  async function applyImgUpdates(rows, source) {
+    if (!rows.length) return;
+    const body = rows.map(r => Object.assign({ source: source, license: "Próprio", updated_by: AUTH.uid, updated_at: new Date().toISOString() }, r));
+    await api("/rest/v1/exercise_catalog?on_conflict=name", { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" }, body: body });
+  }
+  document.getElementById("bk-upload").onclick = async () => {
+    const files = Array.from(document.getElementById("bk-files").files); if (!files.length) { bkLog("Selecione os arquivos de imagem."); return; }
+    const over = document.getElementById("bk-over").checked, create = document.getElementById("bk-create").checked, btn = document.getElementById("bk-upload");
+    const bySlug = {}; GLOBAL.forEach(g => { bySlug[slugOf(g.name)] = g; });
+    const updates = [], unmatched = [], skipped = [], failed = [], created = []; btn.disabled = true;
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i], slug = slugOf(f.name.replace(/\.[^.]+$/, "")); bkLog("Enviando " + (i + 1) + " de " + files.length + "…\n" + f.name);
+      let row = bySlug[slug];
+      if (!row) { if (!create) { unmatched.push(f.name); continue; } row = { name: prettyFromSlug(slug), img: "", category: "Outros", isNew: true }; }
+      if (row.img && !over) { skipped.push(f.name); continue; }
+      try { const url = await uploadExImage(f, row.name); updates.push(row.isNew ? { name: row.name, category: "Outros", img: url } : { name: row.name, img: url }); if (row.isNew) created.push(row.name); }
+      catch (e) { failed.push(f.name + " (" + e.message + ")"); }
+    }
+    try { await applyImgUpdates(updates, "Banco próprio"); await loadGlobal(); renderCatalog(); } catch (e) { failed.push("gravação no catálogo: " + e.message); }
+    btn.disabled = false;
+    bkLog("Concluído.\n✓ Vinculados: " + (updates.length - created.length) + "\n+ Exercícios criados: " + created.length + "\n= Já tinham imagem (mantidos): " + skipped.length + "\n? Sem exercício correspondente: " + unmatched.length + (unmatched.length ? "\n   " + unmatched.slice(0, 15).join("\n   ") + (unmatched.length > 15 ? "\n   …" : "") : "") + "\n✗ Falhas: " + failed.length + (failed.length ? "\n   " + failed.slice(0, 8).join("\n   ") : ""));
+  };
+  function probeImg(url) { return new Promise(res => { const im = new Image(); const t = setTimeout(() => res(false), 8000); im.onload = () => { clearTimeout(t); res(true); }; im.onerror = () => { clearTimeout(t); res(false); }; im.src = url; }); }
+  document.getElementById("bk-link").onclick = async () => {
+    let base = val("bk-base"); if (!/^https:\/\//.test(base)) { bkLog("Informe o endereço base começando com https://"); return; }
+    if (base.slice(-1) !== "/") base += "/";
+    const ext = document.getElementById("bk-ext").value, over = document.getElementById("bk-over").checked, btn = document.getElementById("bk-link");
+    const todo = GLOBAL.filter(g => over || !g.img), found = [], missing = []; let idx = 0, doneN = 0; btn.disabled = true;
+    async function worker() { while (idx < todo.length) { const g = todo[idx++], url = base + slugOf(g.name) + "." + ext; if (await probeImg(url)) found.push({ name: g.name, img: url }); else missing.push(g.name); doneN++; if (doneN % 5 === 0) bkLog("Testando " + doneN + " de " + todo.length + "…"); } }
+    await Promise.all([worker(), worker(), worker(), worker(), worker(), worker()]);
+    try { await applyImgUpdates(found, "Banco próprio (externo)"); await loadGlobal(); renderCatalog(); } catch (e) { bkLog("Não consegui gravar: " + e.message); btn.disabled = false; return; }
+    btn.disabled = false;
+    bkLog("Concluído.\n✓ Vinculados: " + found.length + "\n? Arquivo não encontrado no endereço: " + missing.length + (missing.length ? "\n   " + missing.slice(0, 15).join("\n   ") + (missing.length > 15 ? "\n   …" : "") : ""));
+  };
 
   // ---- app instalável: service worker e atalhos (?tab=...) ----
   if ("serviceWorker" in navigator && location.protocol === "https:") { navigator.serviceWorker.register("sw.js").catch(() => {}); }
