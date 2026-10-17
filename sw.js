@@ -1,4 +1,4 @@
-// Service worker da Ficha de Treino: deixa o app instalável e abrir sem internet.
+// Service worker do Gym Online: deixa o app instalável e abrir sem internet.
 // Estratégia: rede primeiro (o app atualiza assim que você sobe uma versão nova) e cache como reserva.
 // Chamadas ao Supabase (outro domínio) nunca passam pelo cache.
 const CACHE = "ficha-v1";
