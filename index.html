@@ -369,7 +369,7 @@
   .hist-det b { color:var(--text); font-size:12px; }
   .chart-box { background:var(--bg-card); border:1px solid var(--line); border-radius:16px; padding:12px 10px 6px; margin:12px 0; }
   .chart-box .ttl { font-size:11px; font-weight:800; letter-spacing:.06em; color:var(--text-dim); margin:0 4px 4px; }
-  .logo.has-img { background:#fff; padding:2px; } .logo img { width:100%; height:100%; object-fit:contain; border-radius:8px; }
+  .logo.has-img { background:transparent; padding:0; box-shadow:none; overflow:hidden; } .logo img { width:100%; height:100%; object-fit:cover; border-radius:inherit; display:block; }
   .perm-grid { margin:6px 0 8px; } .perm-grid label { display:flex; align-items:center; font-size:12.5px; margin:7px 0; color:var(--text); }
   .perm-grid input[type=checkbox], .terms-row input[type=checkbox] { width:auto; margin:0 9px 0 0; flex-shrink:0; }
   #notice-bar { display:none; margin:0 0 12px; padding:10px 14px; border-radius:12px; background:var(--gold-glow); border:1px solid var(--gold); font-size:12.5px; font-weight:700; }
@@ -400,6 +400,15 @@
     #bottom-nav .nav-inner { flex:1; }
     #hdr-logout { display:none !important; }
   }
+  #cfg-logo-prev, #pm-prev { width:90px; height:90px !important; margin:0 auto 8px; border-radius:18px; cursor:pointer; background-color:#16282c; background-image:conic-gradient(#2a3a3f 25%, #1b2a2e 0 50%, #2a3a3f 0 75%, #1b2a2e 0); background-size:16px 16px; }
+  #cfg-logo-prev img, #pm-prev img { object-fit:cover; border-radius:inherit; }
+  .crop-wrap { display:flex; justify-content:center; margin:10px 0; }
+  #crop-canvas { width:280px; height:280px; border-radius:22px; touch-action:none; cursor:grab; background-color:#16282c; background-image:conic-gradient(#2a3a3f 25%, #1b2a2e 0 50%, #2a3a3f 0 75%, #1b2a2e 0); background-size:20px 20px; border:1px solid var(--line); }
+  #crop-canvas:active { cursor:grabbing; }
+  .mini-btn { flex:1; padding:10px 8px; border-radius:12px; border:1px solid var(--line); background:var(--bg-card2); color:var(--text); font-size:12px; font-weight:700; }
+  .mini-btn.on { border-color:var(--gold); color:var(--gold); }
+  .crop-row { display:flex; gap:8px; margin:8px 0; align-items:center; }
+  #crop-color { width:46px; height:36px; padding:0; border:1px solid var(--line); border-radius:8px; background:none; }
 </style>
 </head>
 <body>
@@ -509,6 +518,7 @@
         <h3>🏢 Dados da academia</h3>
         <div class="cat-prev" id="cfg-logo-prev" style="height:90px;">🏢</div>
         <input id="cfg-logo-file" type="file" accept="image/*" />
+        <div class="st" style="margin:-2px 0 8px;">Ao escolher a imagem você ajusta o enquadramento (clique no logo para ajustar de novo).</div>
         <input id="cfg-name" placeholder="Nome da academia" autocomplete="organization" />
         <input id="cfg-display" placeholder="Nome exibido no app (opcional; se vazio, usa o nome acima)" autocomplete="off" />
         <input id="cfg-email" type="email" placeholder="E-mail de contato" autocomplete="off" />
@@ -702,6 +712,19 @@
     <div id="sort-list"></div>
     <button class="start-btn" id="sort-done" style="margin-top:10px;">Concluir</button>
     <a id="sort-cancel" style="text-align:center;">Cancelar</a>
+  </div>
+</div>
+
+<div class="login-screen" id="crop-modal" style="z-index:150;">
+  <div class="login-card" style="text-align:left;max-height:94vh;overflow:auto;">
+    <h2 style="text-align:center;">Ajustar logo</h2>
+    <p style="text-align:center;">Arraste a imagem para posicionar e use o zoom. O quadrado é o que aparece no app, com fundo transparente.</p>
+    <div class="crop-wrap"><canvas id="crop-canvas" width="280" height="280"></canvas></div>
+    <label>Zoom</label><input id="crop-zoom" type="range" min="100" max="400" value="100" />
+    <div class="crop-row"><button class="mini-btn on" id="crop-fill">Preencher o quadrado</button><button class="mini-btn" id="crop-fit">Mostrar inteira</button></div>
+    <div class="crop-row"><label class="terms-row" style="margin:0;flex:1;"><input type="checkbox" id="crop-bg" /><span>Colocar cor de fundo</span></label><input id="crop-color" type="color" value="#ffffff" /></div>
+    <button class="start-btn" id="crop-ok" style="margin-top:8px;">Usar esta imagem</button>
+    <a id="crop-cancel" style="text-align:center;">Cancelar</a>
   </div>
 </div>
 
@@ -2876,9 +2899,9 @@
     applyLogo();
   }
   const LOGOS_PUB = SB + "/storage/v1/object/public/logos/";
-  async function uploadLogo(file, companyId) {
-    const blob = await compressImage(file, 512, true), path = companyId + "/logo-" + Date.now().toString(36) + ".webp", tok = await freshToken();
-    const r = await fetch(SB + "/storage/v1/object/logos/" + path, { method: "POST", headers: { apikey: DEFAULT_SUPA.key, Authorization: "Bearer " + tok, "Content-Type": "image/webp", "cache-control": "max-age=31536000" }, body: blob });
+  async function uploadLogo(blob, companyId) {
+    const ext = blob.type === "image/png" ? "png" : "webp", path = companyId + "/logo-" + Date.now().toString(36) + "." + ext, tok = await freshToken();
+    const r = await fetch(SB + "/storage/v1/object/logos/" + path, { method: "POST", headers: { apikey: DEFAULT_SUPA.key, Authorization: "Bearer " + tok, "Content-Type": blob.type || "image/webp", "cache-control": "max-age=31536000" }, body: blob });
     if (!r.ok) throw new Error("envio do logo falhou (" + r.status + ")");
     return LOGOS_PUB + path;
   }
@@ -2892,17 +2915,24 @@
     const c = COMPANY || {}; const set = (id, v) => { document.getElementById(id).value = v || ""; };
     set("cfg-name", c.name); set("cfg-display", c.display_name); set("cfg-email", c.email); set("cfg-phone", c.phone); set("cfg-address", c.address); set("cfg-city", c.city); set("cfg-uf", c.state);
     document.getElementById("cfg-legal").textContent = (c.legal_name || c.cnpj) ? "Razão social: " + (c.legal_name || "—") + " · CNPJ: " + (fmtCnpj(c.cnpj) || "—") + " (alterações: fale com o suporte do app)" : "";
-    setPrev("cfg-logo-prev", c.logo_url); document.getElementById("cfg-logo-file").value = "";
+    setPrev("cfg-logo-prev", c.logo_url); document.getElementById("cfg-logo-file").value = ""; cfgLogoBlob = null; cfgLogoSrc = null;
   }
-  document.getElementById("cfg-logo-file").onchange = e => { const f = e.target.files[0]; if (f) setPrev("cfg-logo-prev", URL.createObjectURL(f)); };
+  let cfgLogoBlob = null, cfgLogoSrc = null, pmLogoBlob = null, pmLogoSrc = null;
+  async function pickLogo(inputEl, prevId, setBlob, getSrc, setSrc) {
+    const f = inputEl.files && inputEl.files[0]; if (!f) return;
+    setSrc(f); const b = await cropLogo(f);
+    if (b) { setBlob(b); setPrev(prevId, URL.createObjectURL(b)); } else { inputEl.value = ""; setSrc(null); setBlob(null); }
+  }
+  document.getElementById("cfg-logo-file").onchange = e => pickLogo(e.target, "cfg-logo-prev", b => { cfgLogoBlob = b; }, () => cfgLogoSrc, f => { cfgLogoSrc = f; });
+  document.getElementById("cfg-logo-prev").onclick = async () => { if (!cfgLogoSrc) return; const b = await cropLogo(cfgLogoSrc); if (b) { cfgLogoBlob = b; setPrev("cfg-logo-prev", URL.createObjectURL(b)); } };
   document.getElementById("cfg-name-save").onclick = async () => {
     const v = val("cfg-name"); if (v.length < 2) { alert("Informe o nome da academia."); return; }
     try {
-      const file = document.getElementById("cfg-logo-file").files[0], old = COMPANY.logo_url;
+      const file = cfgLogoBlob, old = COMPANY.logo_url;
       const body = { name: v, display_name: val("cfg-display") || null, email: val("cfg-email") || null, phone: val("cfg-phone") || null, address: val("cfg-address") || null, city: val("cfg-city") || null, state: val("cfg-uf").toUpperCase() || null };
       if (file) body.logo_url = await uploadLogo(file, COMPANY.id);
       await api("/rest/v1/companies?id=eq." + COMPANY.id, { method: "PATCH", body: body });
-      Object.assign(COMPANY, body); if (file) removeOldLogo(old); renderBrand();
+      Object.assign(COMPANY, body); if (file) removeOldLogo(old); cfgLogoBlob = null; renderBrand();
       document.getElementById("company-name").textContent = v; toast("Dados da academia salvos.");
     } catch (e) { alert("Não consegui salvar: " + e.message); }
   };
@@ -2952,7 +2982,7 @@
     if (!PLAT.length) { box.appendChild(mk("div", "empty-note", "Nenhuma academia cadastrada. Toque em “Nova academia”.")); return; }
     PLAT.forEach(c => {
       const card = mk("div", "stu-card"); card.style.cursor = "default"; card.style.flexWrap = "wrap";
-      const av = mk("div", "stu-av"); if (c.logo_url) { av.style.background = "#fff"; const im = document.createElement("img"); im.src = c.logo_url; im.style.cssText = "width:100%;height:100%;object-fit:contain;border-radius:50%;"; av.appendChild(im); } else av.textContent = (c.name || "?").charAt(0).toUpperCase();
+      const av = mk("div", "stu-av"); if (c.logo_url) { av.style.background = "transparent"; const im = document.createElement("img"); im.src = c.logo_url; im.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:50%;"; av.appendChild(im); } else av.textContent = (c.name || "?").charAt(0).toUpperCase();
       const info = mk("div", "stu-info"); const nm = mk("div", "stu-name", c.name); info.appendChild(nm);
       info.appendChild(mk("div", "stu-sub", (c.cnpj ? fmtCnpj(c.cnpj) : "sem CNPJ") + " · " + c.students + " alunos · " + c.staff + " na equipe · plano " + c.plan + " · código " + c.slug));
       card.appendChild(av); card.appendChild(info); card.appendChild(mk("span", "chg-chip " + (c.status === "suspended" ? "chip-susp" : "chip-act"), c.status === "suspended" ? "Suspensa" : "Ativa"));
@@ -2971,19 +3001,20 @@
     set("pm-name", c && c.name); set("pm-legal", c && c.legal_name); set("pm-cnpj", c && fmtCnpj(c.cnpj)); set("pm-email", c && c.email); set("pm-phone", c && c.phone);
     set("pm-address", c && c.address); set("pm-city", c && c.city); set("pm-uf", c && c.state); document.getElementById("pm-plan").value = (c && c.plan) || "free"; set("pm-notes", c && c.notes);
     set("pm-owner-name", ""); set("pm-owner-email", ""); set("pm-owner-pass", ""); document.getElementById("pm-owner").style.display = c ? "none" : "block";
-    document.getElementById("pm-logo").value = ""; setPrev("pm-prev", c && c.logo_url); document.getElementById("pm-status").textContent = ""; platModal.classList.add("show");
+    document.getElementById("pm-logo").value = ""; pmLogoBlob = null; pmLogoSrc = null; setPrev("pm-prev", c && c.logo_url); document.getElementById("pm-status").textContent = ""; platModal.classList.add("show");
   }
   document.getElementById("plat-new").onclick = () => openPlatModal(null);
   document.getElementById("plat-refresh").onclick = loadPlatform;
   document.getElementById("pm-close").onclick = () => platModal.classList.remove("show");
-  document.getElementById("pm-logo").onchange = e => { const f = e.target.files[0]; if (f) setPrev("pm-prev", URL.createObjectURL(f)); };
+  document.getElementById("pm-logo").onchange = e => pickLogo(e.target, "pm-prev", b => { pmLogoBlob = b; }, () => pmLogoSrc, f => { pmLogoSrc = f; });
+  document.getElementById("pm-prev").onclick = async () => { if (!pmLogoSrc) return; const b = await cropLogo(pmLogoSrc); if (b) { pmLogoBlob = b; setPrev("pm-prev", URL.createObjectURL(b)); } };
   document.getElementById("pm-save").onclick = async () => {
     const st = document.getElementById("pm-status"), btn = document.getElementById("pm-save");
     const company = { name: val("pm-name"), legal_name: val("pm-legal"), cnpj: val("pm-cnpj"), email: val("pm-email"), phone: val("pm-phone"), address: val("pm-address"), city: val("pm-city"), state: val("pm-uf").toUpperCase(), plan: document.getElementById("pm-plan").value, notes: val("pm-notes") };
     if (company.name.length < 2) { st.textContent = "Informe o nome fantasia."; return; }
     btn.disabled = true; st.textContent = "Salvando…";
     try {
-      const file = document.getElementById("pm-logo").files[0];
+      const file = pmLogoBlob;
       if (platEditing) {
         if (file) { company.logo_url = await uploadLogo(file, platEditing.id); removeOldLogo(platEditing.logo_url); }
         await platFn({ action: "update", id: platEditing.id, company: company });
@@ -3064,7 +3095,7 @@
       const rows = r.ok ? await r.json() : [];
       if (!rows.length) { lg.textContent = "🏋"; tt.textContent = APP_NAME; sb.textContent = ""; return; }
       tt.textContent = rows[0].name; sb.textContent = "GYM ONLINE"; lg.innerHTML = "";
-      if (rows[0].logo_url) { const im = document.createElement("img"); im.src = rows[0].logo_url; im.alt = rows[0].name; im.style.cssText = "max-height:64px;max-width:160px;object-fit:contain;"; im.onerror = () => { lg.textContent = "🏋"; }; lg.appendChild(im); } else lg.textContent = "🏋";
+      if (rows[0].logo_url) { const im = document.createElement("img"); im.src = rows[0].logo_url; im.alt = rows[0].name; im.style.cssText = "width:72px;height:72px;object-fit:cover;border-radius:18px;"; im.onerror = () => { lg.textContent = "🏋"; }; lg.appendChild(im); } else lg.textContent = "🏋";
     } catch (e) {}
   }
   document.getElementById("login-acad").addEventListener("change", e => loadBranding(e.target.value));
@@ -3114,6 +3145,38 @@
       const sc = inter / (A.length + B.length - inter || 1); if (sc > score) { score = sc; best = g; }
     });
     return score >= 0.5 ? best.name : "";
+  }
+
+
+  // ---- editor de enquadramento do logo (recorte, zoom e fundo transparente) ----
+  function cropLogo(file) {
+    return new Promise(resolve => {
+      const modal = document.getElementById("crop-modal"), cv = document.getElementById("crop-canvas"), ctx = cv.getContext("2d"), S = 280;
+      const zoomEl = document.getElementById("crop-zoom"), bgChk = document.getElementById("crop-bg"), colorEl = document.getElementById("crop-color");
+      const img = new Image(), url = URL.createObjectURL(file); let iw = 512, ih = 512, mode = "fill", zoom = 1, ox = 0, oy = 0, drag = null;
+      const base = () => mode === "fill" ? Math.max(S / iw, S / ih) : Math.min(S / iw, S / ih);
+      function clamp() { if (mode !== "fill") return; const sc = base() * zoom, mx = Math.max(0, (iw * sc - S) / 2), my = Math.max(0, (ih * sc - S) / 2); ox = Math.min(mx, Math.max(-mx, ox)); oy = Math.min(my, Math.max(-my, oy)); }
+      function draw(c2, size) {
+        const k = size / S; c2.clearRect(0, 0, size, size); c2.imageSmoothingQuality = "high";
+        if (bgChk.checked) { c2.fillStyle = colorEl.value; c2.fillRect(0, 0, size, size); }
+        const sc = base() * zoom * k, w = iw * sc, h = ih * sc; c2.drawImage(img, size / 2 + ox * k - w / 2, size / 2 + oy * k - h / 2, w, h);
+      }
+      const redraw = () => { clamp(); draw(ctx, S); };
+      function setMode(m) { mode = m; zoom = 1; ox = 0; oy = 0; zoomEl.min = m === "fill" ? "100" : "40"; zoomEl.value = "100"; document.getElementById("crop-fill").classList.toggle("on", m === "fill"); document.getElementById("crop-fit").classList.toggle("on", m === "fit"); redraw(); }
+      img.onload = () => { iw = img.naturalWidth || 512; ih = img.naturalHeight || 512; bgChk.checked = false; setMode("fill"); modal.classList.add("show"); };
+      img.onerror = () => { URL.revokeObjectURL(url); alert("Não consegui abrir essa imagem."); resolve(null); };
+      img.src = url;
+      cv.onpointerdown = e => { try { cv.setPointerCapture(e.pointerId); } catch (x) {} drag = { x: e.clientX, y: e.clientY, ox: ox, oy: oy }; };
+      cv.onpointermove = e => { if (!drag) return; const k = S / cv.getBoundingClientRect().width; ox = drag.ox + (e.clientX - drag.x) * k; oy = drag.oy + (e.clientY - drag.y) * k; redraw(); };
+      cv.onpointerup = cv.onpointercancel = () => { drag = null; };
+      cv.onwheel = e => { e.preventDefault(); zoomEl.value = Math.min(+zoomEl.max, Math.max(+zoomEl.min, +zoomEl.value + (e.deltaY < 0 ? 12 : -12))); zoom = zoomEl.value / 100; redraw(); };
+      zoomEl.oninput = () => { zoom = zoomEl.value / 100; redraw(); };
+      document.getElementById("crop-fill").onclick = () => setMode("fill"); document.getElementById("crop-fit").onclick = () => setMode("fit");
+      bgChk.onchange = redraw; colorEl.oninput = redraw;
+      const close = out => { modal.classList.remove("show"); URL.revokeObjectURL(url); resolve(out); };
+      document.getElementById("crop-cancel").onclick = () => close(null);
+      document.getElementById("crop-ok").onclick = () => { const out = document.createElement("canvas"); out.width = out.height = 512; draw(out.getContext("2d"), 512); out.toBlob(b => close(b), "image/webp", 0.92); };
+    });
   }
 
   // ---- app instalável: service worker e atalhos (?tab=...) ----
